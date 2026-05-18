@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Mail,
   Phone,
@@ -12,12 +13,24 @@ import { useApp } from '../../contexts/AppContext';
 
 export default function SupplierTable() {
   const { suppliers, deleteExistingSupplier } = useApp();
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleDelete = (supplierId: string) => {
     if (window.confirm('Are you sure you want to delete this supplier?')) {
       deleteExistingSupplier(supplierId);
     }
   };
+
+  const filteredSuppliers = suppliers.filter(supplier => {
+    if (!searchTerm) return true;
+    const lower = searchTerm.toLowerCase();
+    return (
+      supplier.name.toLowerCase().includes(lower) ||
+      supplier.contactPerson.toLowerCase().includes(lower) ||
+      (supplier.category && supplier.category.toLowerCase().includes(lower)) ||
+      supplier.email.toLowerCase().includes(lower)
+    );
+  });
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-fade-in">
@@ -26,7 +39,7 @@ export default function SupplierTable() {
         <div>
           <h2 className="text-xl font-bold text-slate-900">Verified Network</h2>
           <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">
-            {suppliers.length} Registered Partners
+            {filteredSuppliers.length} Registered Partners
           </p>
         </div>
 
@@ -36,6 +49,8 @@ export default function SupplierTable() {
             <input
               type="text"
               placeholder="Filter suppliers..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-slate-50 pl-11 pr-4 py-3 rounded-xl outline-none border border-slate-200 focus:border-[#c2410c]/30 transition-all text-sm w-[280px]"
             />
           </div>
@@ -56,11 +71,18 @@ export default function SupplierTable() {
           </thead>
 
           <tbody className="divide-y divide-slate-50">
-            {suppliers.map((supplier) => (
-              <tr
-                key={supplier.id}
-                className="group hover:bg-slate-50/50 transition-colors"
-              >
+            {filteredSuppliers.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-8 py-10 text-center text-slate-400 font-medium">
+                  No suppliers found matching "{searchTerm}"
+                </td>
+              </tr>
+            ) : (
+              filteredSuppliers.map((supplier) => (
+                <tr
+                  key={supplier.id}
+                  className="group hover:bg-slate-50/50 transition-colors"
+                >
                 <td className="px-8 py-6">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-[#c2410c] shadow-sm">
@@ -131,7 +153,8 @@ export default function SupplierTable() {
                   </div>
                 </td>
               </tr>
-            ))}
+            ))
+            )}
           </tbody>
         </table>
       </div>

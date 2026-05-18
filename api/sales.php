@@ -9,12 +9,46 @@ switch ($method) {
         $stmt = $pdo->query('SELECT * FROM sales ORDER BY created_at DESC');
         $sales = $stmt->fetchAll();
         
-        foreach ($sales as &$sale) {
+        $mappedSales = [];
+        foreach ($sales as $sale) {
             $itemStmt = $pdo->prepare('SELECT * FROM sale_items WHERE sale_id = ?');
             $itemStmt->execute([$sale['id']]);
-            $sale['items'] = $itemStmt->fetchAll();
+            $rawItems = $itemStmt->fetchAll();
+            
+            $items = array_map(function($item) {
+                return [
+                    'productId' => $item['product_id'],
+                    'productName' => $item['product_name'],
+                    'quantity' => intval($item['quantity']),
+                    'unitPrice' => floatval($item['unit_price'] ?? $item['price']),
+                    'discount' => floatval($item['discount'] ?? 0),
+                    'total' => floatval($item['total'] ?? ($item['price'] * $item['quantity']))
+                ];
+            }, $rawItems);
+            
+            // Calculate subtotal for safety
+            $subtotal = array_reduce($items, function($carry, $item) {
+                return $carry + $item['total'];
+            }, 0);
+            
+            $mappedSales[] = [
+                'id' => $sale['id'],
+                'items' => $items,
+                'subtotal' => floatval($sale['subtotal'] ?? $subtotal),
+                'tax' => floatval($sale['tax'] ?? 0),
+                'discount' => floatval($sale['discount'] ?? 0),
+                'total' => floatval($sale['total']),
+                'paymentMethod' => $sale['payment_method'],
+                'amountPaid' => floatval($sale['amount_paid'] ?? $sale['total']),
+                'change' => floatval($sale['change_amount'] ?? 0),
+                'status' => $sale['status'],
+                'saleDate' => $sale['created_at'], // Frontend will parse this string to Date
+                'customerName' => $sale['customer_name'] ?? 'Walk-in',
+                'cashier' => $sale['cashier'] ?? 'Unknown',
+                'notes' => $sale['notes'] ?? ''
+            ];
         }
-        echo json_encode($sales);
+        echo json_encode($mappedSales);
         break;
 
     case 'POST':

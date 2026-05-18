@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Boxes, 
@@ -23,7 +23,6 @@ const allLinks = [
 
 export default function Sidebar() {
   const { user, logout } = useApp();
-  const location = useLocation();
   const navigate = useNavigate();
   
   // Filter links based on user role

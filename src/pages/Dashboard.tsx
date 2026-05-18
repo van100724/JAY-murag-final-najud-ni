@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SalesChart from '../components/dashboard/SalesChart';
 import LowStockWidget from '../components/dashboard/LowStockWidget';
@@ -11,8 +11,9 @@ import {
 } from 'lucide-react';
 
 export default function Dashboard() {
-  const { sales, suppliers, user, logout } = useApp();
+  const { sales, suppliers, user, seedDemoDatabase } = useApp();
   const navigate = useNavigate();
+  const [isSeeding, setIsSeeding] = useState(false);
 
   // Calculate Daily Stats
   const today = new Date();
@@ -32,11 +33,31 @@ export default function Dashboard() {
   const nextDeliveryDate = new Date();
   nextDeliveryDate.setDate(nextDeliveryDate.getDate() + 1);
   const deliveryTime = "09:00 AM";
+  
   const handleSyncWarehouse = () => {
     if (window.confirm('CRITICAL: This will synchronize your terminal with the central warehouse database. All local modifications, custom products, and sales history will be wiped. Proceed with System Sync?')) {
       // Aggressive clear
       localStorage.clear();
       window.location.href = '/login'; // Force redirect to login for fresh state
+    }
+  };
+
+  const handleSeedDemoData = async () => {
+    if (window.confirm('This will load a beautiful, high-fidelity mock dataset (18+ products with real images, 5 premium suppliers, 120+ historical sales distributed over 30 days, active notifications, and detailed stats) for your presentation. Proceed with Seeding?')) {
+      setIsSeeding(true);
+      try {
+        const isOnline = await seedDemoDatabase();
+        alert(
+          isOnline 
+            ? 'Success! Beautiful database tables seeded in MariaDB. All charts and historical trends are now active!'
+            : 'Demonstration Mode: Local state & localStorage seeded with high-fidelity sales and product data. Perfect for offline presentation!'
+        );
+        window.location.reload(); // Refresh the page to load fresh seeded data
+      } catch (err: any) {
+        alert('Error seeding data: ' + err.message);
+      } finally {
+        setIsSeeding(false);
+      }
     }
   };
 
@@ -53,13 +74,27 @@ export default function Dashboard() {
             <p className="text-white/70 text-xs">Last updated 2 minutes ago. All Warehouse A-12 terminals are operational.</p>
           </div>
         </div>
-        <button 
-          onClick={handleSyncWarehouse}
-          className="bg-white text-[#9a3412] px-6 py-2 rounded-lg text-xs font-black uppercase tracking-wider hover:bg-slate-50 transition-all shadow-md active:scale-95 flex items-center gap-2"
-        >
-          <RefreshCcw size={14} className="animate-spin-hover" />
-          Sync Warehouse
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleSeedDemoData}
+            disabled={isSeeding}
+            className="bg-amber-500 hover:bg-amber-400 text-white px-6 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSeeding ? (
+              <RefreshCcw size={14} className="animate-spin" />
+            ) : (
+              <RefreshCcw size={14} className="animate-spin-hover" />
+            )}
+            {isSeeding ? 'Seeding...' : 'Seed Demo Data'}
+          </button>
+          <button 
+            onClick={handleSyncWarehouse}
+            className="bg-white text-[#9a3412] px-6 py-2 rounded-lg text-xs font-black uppercase tracking-wider hover:bg-slate-50 transition-all shadow-md active:scale-95 flex items-center gap-2"
+          >
+            <RefreshCcw size={14} className="animate-spin-hover" />
+            Sync Warehouse
+          </button>
+        </div>
       </div>
 
       {/* Quick Actions */}

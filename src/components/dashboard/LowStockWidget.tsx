@@ -5,27 +5,7 @@ export default function LowStockWidget() {
   const { getLowStock } = useApp();
   const lowStockProducts = getLowStock();
 
-  const mockLowStock = [
-    {
-      name: 'ESTWING 22OZ HAMMER',
-      sku: 'HW-442-12',
-      stock: 'Stock: 2 Left',
-      image: 'https://images.unsplash.com/photo-1586864387917-f53bc264434a?w=100&h=100&fit=crop',
-    },
-    {
-      name: 'SATIN WHITE 5L',
-      sku: 'PT-WHI-50',
-      stock: 'Stock: 12 Units',
-      image: 'https://images.unsplash.com/photo-1589939705384-5185138a04b9?w=100&h=100&fit=crop',
-    },
-    {
-      name: 'PRO-GRIP GLOVES (L)',
-      sku: 'SF-GLV-09',
-      stock: 'Stock: 0 - Out',
-      urgent: true,
-      image: 'https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=100&h=100&fit=crop',
-    },
-  ];
+
 
   return (
     <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm h-full">

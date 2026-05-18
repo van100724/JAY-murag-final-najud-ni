@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pencil, Trash2, Search, Filter } from 'lucide-react';
+import { Pencil, Trash2, Search } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
 interface InventoryTableProps {

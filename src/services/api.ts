@@ -87,5 +87,11 @@ export const api = {
       method: 'DELETE',
     });
     return res.json();
+  },
+  async seedDemoData() {
+    const res = await fetch(`${API_BASE_URL}/seed_demo_data.php`, {
+      method: 'POST',
+    });
+    return res.json();
   }
 };
