@@ -49,9 +49,9 @@ export default function SupplierForm({ open, onClose }: SupplierFormProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="relative w-full max-w-2xl overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.18)] translate-y-32">
+      <div className="relative w-full max-w-2xl bg-white rounded-[32px] border border-slate-200 shadow-[0_30px_80px_rgba(15,23,42,0.18)] flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-8 py-5 bg-[#fafafa]">
+        <div className="flex items-center justify-between border-b border-slate-100 px-8 py-5 bg-[#fafafa] flex-shrink-0">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#c2410c] text-white shadow-lg shadow-orange-900/20">
               <Truck size={24} />
@@ -77,7 +77,7 @@ export default function SupplierForm({ open, onClose }: SupplierFormProps) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5 px-8 py-8">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-5 px-8 py-8">
           <div className="grid grid-cols-2 gap-5">
             <div>
               <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">Supplier Name</label>

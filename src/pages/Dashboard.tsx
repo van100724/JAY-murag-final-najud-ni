@@ -170,7 +170,10 @@ export default function Dashboard() {
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <h2 className="text-lg font-bold text-slate-800 tracking-tight">Recent Transactions</h2>
-              <button className="text-[10px] font-black text-[#9a3412] uppercase tracking-widest hover:underline">
+              <button 
+                onClick={() => navigate('/reports')}
+                className="text-[10px] font-black text-[#9a3412] uppercase tracking-widest hover:underline"
+              >
                 View All History
               </button>
             </div>

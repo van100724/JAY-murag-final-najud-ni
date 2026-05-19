@@ -135,7 +135,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         saleDate: new Date(sale.saleDate)
       }));
       
-      setProducts(p);
+      const parsedProducts = p.map((prod: any) => ({
+        ...prod,
+        costPrice: prod.costPrice !== undefined ? Number(prod.costPrice) : Number(prod.cost_price ?? 0),
+        reorderLevel: prod.reorderLevel !== undefined ? Number(prod.reorderLevel) : Number(prod.reorder_level ?? 0),
+      }));
+
+      setProducts(parsedProducts);
       setSales(parsedSales);
       setSuppliers(sup);
       setAlerts(a);
@@ -195,7 +201,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       const newProduct = { ...productData, id };
       await api.addProduct(newProduct);
       const updatedProducts = await api.getProducts();
-      setProducts(updatedProducts);
+      const parsedProducts = updatedProducts.map((prod: any) => ({
+        ...prod,
+        costPrice: prod.costPrice !== undefined ? Number(prod.costPrice) : Number(prod.cost_price ?? 0),
+        reorderLevel: prod.reorderLevel !== undefined ? Number(prod.reorderLevel) : Number(prod.reorder_level ?? 0),
+      }));
+      setProducts(parsedProducts);
     } catch (err) {
       console.error('Failed to add product:', err);
     }
@@ -205,7 +216,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     try {
       await api.updateProduct(id, updates);
       const updatedProducts = await api.getProducts();
-      setProducts(updatedProducts);
+      const parsedProducts = updatedProducts.map((prod: any) => ({
+        ...prod,
+        costPrice: prod.costPrice !== undefined ? Number(prod.costPrice) : Number(prod.cost_price ?? 0),
+        reorderLevel: prod.reorderLevel !== undefined ? Number(prod.reorderLevel) : Number(prod.reorder_level ?? 0),
+      }));
+      setProducts(parsedProducts);
     } catch (err) {
       console.error('Failed to update product:', err);
     }
@@ -215,7 +231,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     try {
       await api.deleteProduct(id);
       const updatedProducts = await api.getProducts();
-      setProducts(updatedProducts);
+      const parsedProducts = updatedProducts.map((prod: any) => ({
+        ...prod,
+        costPrice: prod.costPrice !== undefined ? Number(prod.costPrice) : Number(prod.cost_price ?? 0),
+        reorderLevel: prod.reorderLevel !== undefined ? Number(prod.reorderLevel) : Number(prod.reorder_level ?? 0),
+      }));
+      setProducts(parsedProducts);
     } catch (err) {
       console.error('Failed to delete product:', err);
     }

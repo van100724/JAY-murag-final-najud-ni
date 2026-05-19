@@ -56,6 +56,16 @@ export default function SalesChart({ data }: SalesChartProps) {
     <div className="w-full h-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }} barSize={50}>
+          <defs>
+            <linearGradient id="colorSalesActive" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#ea580c" stopOpacity={0.95}/>
+              <stop offset="100%" stopColor="#9a3412" stopOpacity={0.95}/>
+            </linearGradient>
+            <linearGradient id="colorSalesInactive" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#cbd5e1" stopOpacity={0.95}/>
+              <stop offset="100%" stopColor="#94a3b8" stopOpacity={0.95}/>
+            </linearGradient>
+          </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
           <XAxis 
             dataKey="time" 
@@ -78,13 +88,17 @@ export default function SalesChart({ data }: SalesChartProps) {
             formatter={(value: any) => [`₱${value.toLocaleString()}`, 'Sales']}
           />
           <Bar dataKey="sales" radius={[6, 6, 0, 0]}>
-            {chartData.map((entry, index) => (
-              <Cell 
-                key={`cell-${index}`} 
-                fill={entry.active ? '#c2410c' : '#f1f5f9'} 
-                className="transition-all duration-300 hover:fill-[#9a3412]"
-              />
-            ))}
+            {chartData.map((entry, index) => {
+              const isMultiDay = !chartData.some(e => e.active);
+              const isHighlighted = entry.active || (isMultiDay && entry.sales > 0);
+              return (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={isHighlighted ? 'url(#colorSalesActive)' : 'url(#colorSalesInactive)'} 
+                  className="transition-all duration-300 hover:opacity-80"
+                />
+              );
+            })}
           </Bar>
         </BarChart>
       </ResponsiveContainer>

@@ -1,4 +1,5 @@
 import LoginForm from '../components/auth/LoginForm';
+import logoImg from '../assets/logo.jpg';
 
 export default function Login() {
   return (
@@ -10,8 +11,8 @@ export default function Login() {
           {/* Logo Area */}
           <div className="text-center mb-10">
             <div className="flex items-center justify-center gap-3 mb-2">
-              <div className="w-12 h-12 bg-[#c2410c] rounded-xl flex items-center justify-center shadow-lg shadow-orange-900/20">
-                <span className="text-2xl">🛠️</span>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden bg-white border border-slate-100 shadow-md">
+                <img src={logoImg} alt="Logo" className="w-full h-full object-cover" />
               </div>
               <h1 className="text-3xl font-black tracking-tighter text-slate-900">
                 J&JAY

@@ -4,7 +4,7 @@ import { useApp } from '../contexts/AppContext';
 import { Calendar, Download, Printer, TrendingUp, Users, CreditCard, PieChart, ArrowUpRight } from 'lucide-react';
 
 export default function Reports() {
-  const { getSalesReportData, getTopSellingProducts } = useApp();
+  const { getSalesReportData, getTopSellingProducts, sales } = useApp();
   const [dateRange, setDateRange] = useState({
     start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
     end: new Date(),
@@ -18,11 +18,84 @@ export default function Reports() {
     return getTopSellingProducts(dateRange.start, dateRange.end, 10);
   }, [getTopSellingProducts, dateRange]);
 
-  const handleDateChange = (field: 'start' | 'end', value: string) => {
-    setDateRange(prev => ({
-      ...prev,
-      [field]: new Date(value),
+  const chartData = useMemo(() => {
+    const start = new Date(dateRange.start);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(dateRange.end);
+    end.setHours(23, 59, 59, 999);
+
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // Get completed sales in the active date range
+    const periodSales = sales.filter(sale => {
+      const d = new Date(sale.saleDate);
+      return d >= start && d <= end && sale.status === 'completed';
+    });
+
+    if (diffDays <= 1) {
+      // Single day: Show hourly view
+      const hours = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'];
+      const currentHour = new Date().getHours();
+      return hours.map(h => {
+        const [hourStr] = h.split(':');
+        const hour = parseInt(hourStr);
+        const bucketSales = periodSales.filter(sale => {
+          const saleHour = new Date(sale.saleDate).getHours();
+          return saleHour === hour || saleHour === hour + 1;
+        });
+        const total = bucketSales.reduce((sum, s) => sum + s.total, 0);
+        return {
+          time: h,
+          sales: total,
+          active: currentHour >= hour && currentHour < hour + 2
+        };
+      });
+    }
+
+    // Multi-day: Show daily view
+    const days: { time: string; dateStr: string; sales: number; active: boolean }[] = [];
+    const temp = new Date(start);
+    while (temp <= end) {
+      const label = temp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      days.push({
+        time: label,
+        dateStr: temp.toDateString(),
+        sales: 0,
+        active: false
+      });
+      temp.setDate(temp.getDate() + 1);
+    }
+
+    periodSales.forEach(sale => {
+      const saleDayStr = new Date(sale.saleDate).toDateString();
+      const dayObj = days.find(d => d.dateStr === saleDayStr);
+      if (dayObj) {
+        dayObj.sales += sale.total;
+      }
+    });
+
+    return days.map(d => ({
+      time: d.time,
+      sales: d.sales,
+      active: false
     }));
+  }, [sales, dateRange]);
+
+  const handleDateChange = (field: 'start' | 'end', value: string) => {
+    setDateRange(prev => {
+      const updatedDate = new Date(value);
+      // Adjust time to prevent time shift errors
+      if (field === 'start') {
+        updatedDate.setHours(0, 0, 0, 0);
+      } else {
+        updatedDate.setHours(23, 59, 59, 999);
+      }
+      return {
+        ...prev,
+        [field]: updatedDate,
+      };
+    });
   };
 
   return (
@@ -108,17 +181,17 @@ export default function Reports() {
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-[#c2410c] rounded-full" />
+                <div className="w-3 h-3 bg-[#ea580c] rounded-full" />
                 <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Actual</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-slate-100 rounded-full" />
+                <div className="w-3 h-3 bg-slate-400 rounded-full" />
                 <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Projected</span>
               </div>
             </div>
           </div>
           <div className="h-[420px]">
-            <SalesChart />
+            <SalesChart data={chartData} />
           </div>
         </div>
 

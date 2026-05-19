@@ -12,7 +12,7 @@ export default function POS() {
   const categories = ['All', ...getProductCategories()];
 
   return (
-    <div className="flex gap-6 h-full w-full overflow-hidden animate-fade-in text-slate-800">
+    <div className="flex gap-6 h-[calc(100vh-140px)] w-full overflow-hidden animate-fade-in text-slate-800">
       {/* Left side: Product Selection - 65% width */}
       <div className="w-[65%] flex flex-col min-w-0 h-full space-y-6">
         {/* Search and Filter Bar */}

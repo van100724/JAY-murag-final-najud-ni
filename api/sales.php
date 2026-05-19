@@ -42,7 +42,7 @@ switch ($method) {
                 'amountPaid' => floatval($sale['amount_paid'] ?? $sale['total']),
                 'change' => floatval($sale['change_amount'] ?? 0),
                 'status' => $sale['status'],
-                'saleDate' => $sale['created_at'], // Frontend will parse this string to Date
+                'saleDate' => date('c', strtotime($sale['created_at'])), // Standardized ISO date format for JS compatibility
                 'customerName' => $sale['customer_name'] ?? 'Walk-in',
                 'cashier' => $sale['cashier'] ?? 'Unknown',
                 'notes' => $sale['notes'] ?? ''

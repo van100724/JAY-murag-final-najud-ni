@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useNavigate } from 'react-router-dom';
+import logoImg from '../../assets/logo.jpg';
 
 const allLinks = [
   { label: 'Dashboard', path: '/', icon: LayoutDashboard, roles: ['admin'] },
@@ -34,8 +35,8 @@ export default function Sidebar() {
       <div className="p-8 border-b border-white/5">
         <div className="flex items-center gap-4 mb-1 group cursor-pointer">
           <div className="relative">
-            <div className="relative w-12 h-12 bg-[#c2410c] rounded-lg flex items-center justify-center shadow-lg shadow-orange-900/20 transform group-hover:rotate-6 transition-transform">
-              <span className="text-2xl drop-shadow-md">🛠️</span>
+            <div className="relative w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden bg-white border border-slate-700 shadow-lg transform group-hover:rotate-6 transition-transform">
+              <img src={logoImg} alt="Logo" className="w-full h-full object-cover" />
             </div>
           </div>
           <div>

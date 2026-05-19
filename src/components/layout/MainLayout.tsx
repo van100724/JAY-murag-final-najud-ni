@@ -14,8 +14,8 @@ export default function MainLayout() {
         <Topbar />
 
         {/* Content Outlet - Flexible height, scrollable internally if needed */}
-        <main className="flex-1 p-8 overflow-hidden">
-          <div className="h-full w-full">
+        <main className="flex-1 p-8 overflow-y-auto">
+          <div className="w-full">
             <Outlet />
           </div>
         </main>
