@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../../contexts/AppContext';
 import { X, User, Banknote, CreditCard, Smartphone, CheckSquare, ArrowRight } from 'lucide-react';
+import Receipt from './Reciept';
 
 interface CheckoutModalProps {
   open: boolean;
@@ -15,8 +16,25 @@ export default function CheckoutModal({
   const [customerName, setCustomerName] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'check' | 'online'>('cash');
   const [amountPaid, setAmountPaid] = useState<number>(0);
+  const [completedSale, setCompletedSale] = useState<any>(null);
+
+  const handleReceiptClose = () => {
+    setCompletedSale(null);
+    setCustomerName('');
+    setAmountPaid(0);
+    onClose();
+  };
 
   if (!open) return null;
+
+  if (completedSale) {
+    return (
+      <Receipt 
+        sale={completedSale} 
+        onClose={handleReceiptClose} 
+      />
+    );
+  }
 
   const subtotal = cart.reduce(
     (acc, item) => acc + item.quantity * item.price,
@@ -47,7 +65,7 @@ export default function CheckoutModal({
       amountPaid,
       0, // discount
       user?.name || 'Unknown Cashier', // cashier
-      customerName ? `Customer: ${customerName}` : '',
+      customerName ? `${customerName}` : 'Walk-in', // cleaner customer name mapping
       tax,
       total,
       change
@@ -55,8 +73,7 @@ export default function CheckoutModal({
 
     if (sale) {
       clearCart();
-      onClose();
-      alert('Transaction Successful!');
+      setCompletedSale(sale);
     }
   };
 

@@ -22,7 +22,7 @@ export default function Notifications() {
           </p>
         </div>
 
-        <button 
+        <button
           onClick={clearAllInventoryAlerts}
           className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-[#c2410c] transition-colors bg-white border border-slate-200 px-4 py-2 rounded-lg shadow-sm active:scale-95"
         >
@@ -37,7 +37,7 @@ export default function Notifications() {
             <AlertTriangle size={18} className="text-orange-500" />
             <h2 className="text-lg font-bold text-slate-900">Stock Threshold Alerts</h2>
           </div>
-          
+
           <div className="space-y-4">
             {lowStockProducts.length > 0 ? (
               lowStockProducts.map((product) => (
@@ -53,7 +53,7 @@ export default function Notifications() {
                       <div>
                         <p className="text-slate-900 font-bold leading-tight group-hover:text-[#c2410c] transition-colors">{product.name}</p>
                         <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Critical: {product.quantity} units remaining</p>
-                        <p className="text-[10px] text-slate-400 font-medium mt-1">Replenishment needed (Reorder Level: {product.reorderLevel})</p>
+                        <p className="text-[10px] text-slate-400 font-medium mt-1">Reorder Level: {product.reorderLevel})</p>
                       </div>
                     </div>
                     <button className="px-3 py-1.5 bg-slate-50 text-slate-400 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-[#c2410c] hover:text-white transition-all">
@@ -64,8 +64,8 @@ export default function Notifications() {
               ))
             ) : (
               <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl py-12 flex flex-col items-center justify-center">
-                 <CheckCircle2 size={32} className="text-emerald-500 mb-3 opacity-50" />
-                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Inventory Levels Optimal</p>
+                <CheckCircle2 size={32} className="text-emerald-500 mb-3 opacity-50" />
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Inventory Levels Optimal</p>
               </div>
             )}
           </div>
@@ -108,8 +108,8 @@ export default function Notifications() {
               ))
             ) : (
               <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl py-12 flex flex-col items-center justify-center">
-                 <Bell size={32} className="text-slate-300 mb-3" />
-                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No Operational Alerts</p>
+                <Bell size={32} className="text-slate-300 mb-3" />
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No Operational Alerts</p>
               </div>
             )}
           </div>

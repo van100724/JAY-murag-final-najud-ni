@@ -37,8 +37,6 @@ CREATE TABLE IF NOT EXISTS suppliers (
     category TEXT,
     status ENUM('active', 'inactive', 'blocked') DEFAULT 'active',
     rating DECIMAL(3, 2) DEFAULT 0,
-    total_orders INT DEFAULT 0,
-    total_spent DECIMAL(15, 2) DEFAULT 0,
     average_delivery_time INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

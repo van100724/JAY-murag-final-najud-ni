@@ -26,6 +26,7 @@ export default function SupplierForm({ open, onClose }: SupplierFormProps) {
     status: 'active' as 'active' | 'inactive' | 'blocked',
     category: '',
     rating: 3,
+    averageDeliveryTime: 1,
   });
 
   const handleChange = (
@@ -35,13 +36,29 @@ export default function SupplierForm({ open, onClose }: SupplierFormProps) {
 
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'rating' ? Number(value) : value,
+      [name]: name === 'rating' || name === 'averageDeliveryTime' ? Number(value) : value,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await addNewSupplier(formData as any);
+    setFormData({
+      name: '',
+      contactPerson: '',
+      email: '',
+      phone: '',
+      address: '',
+      city: 'Quezon City',
+      state: 'Metro Manila',
+      zipCode: '',
+      country: 'Philippines',
+      paymentTerms: 'Net30',
+      status: 'active',
+      category: '',
+      rating: 3,
+      averageDeliveryTime: 1,
+    });
     onClose();
   };
 
@@ -49,7 +66,7 @@ export default function SupplierForm({ open, onClose }: SupplierFormProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="relative w-full max-w-2xl bg-white rounded-[32px] border border-slate-200 shadow-[0_30px_80px_rgba(15,23,42,0.18)] flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="relative w-full max-w-2xl bg-white rounded-[35px] border border-slate-200 shadow-[0_30px_80px_rgba(15,23,42,0.18)] flex flex-col max-h-[90vh] overflow-hidden translate-y-16">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 px-8 py-5 bg-[#fafafa] flex-shrink-0">
           <div className="flex items-center gap-4">
@@ -77,9 +94,10 @@ export default function SupplierForm({ open, onClose }: SupplierFormProps) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-5 px-8 py-8">
-          <div className="grid grid-cols-2 gap-5">
-            <div>
+        <form onSubmit={handleSubmit} className="flex-1 px-8 py-6 space-y-6 overflow-y-auto">
+          <div className="grid grid-cols-12 gap-x-6 gap-y-4">
+            {/* Row 1 */}
+            <div className="col-span-6">
               <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">Supplier Name</label>
               <input
                 type="text"
@@ -91,7 +109,7 @@ export default function SupplierForm({ open, onClose }: SupplierFormProps) {
                 className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-semibold outline-none transition-all placeholder:text-slate-400 focus:border-[#c2410c]/40 focus:bg-white"
               />
             </div>
-            <div>
+            <div className="col-span-6">
               <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">Category</label>
               <select
                 name="category"
@@ -109,10 +127,9 @@ export default function SupplierForm({ open, onClose }: SupplierFormProps) {
                 <option>Fasteners & Adhesives</option>
               </select>
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-5">
-            <div>
+            {/* Row 2 */}
+            <div className="col-span-6">
               <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">Contact Person</label>
               <input
                 type="text"
@@ -124,7 +141,7 @@ export default function SupplierForm({ open, onClose }: SupplierFormProps) {
                 className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-semibold outline-none transition-all placeholder:text-slate-400 focus:border-[#c2410c]/40 focus:bg-white"
               />
             </div>
-            <div>
+            <div className="col-span-6">
               <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">Phone Number</label>
               <input
                 type="text"
@@ -136,10 +153,9 @@ export default function SupplierForm({ open, onClose }: SupplierFormProps) {
                 className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-semibold outline-none transition-all placeholder:text-slate-400 focus:border-[#c2410c]/40 focus:bg-white"
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-5">
-            <div>
+            {/* Row 3 */}
+            <div className="col-span-6">
               <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">Email Address</label>
               <input
                 type="email"
@@ -151,7 +167,7 @@ export default function SupplierForm({ open, onClose }: SupplierFormProps) {
                 className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-semibold outline-none transition-all placeholder:text-slate-400 focus:border-[#c2410c]/40 focus:bg-white"
               />
             </div>
-            <div>
+            <div className="col-span-6">
               <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">Payment Terms</label>
               <select
                 name="paymentTerms"
@@ -165,10 +181,71 @@ export default function SupplierForm({ open, onClose }: SupplierFormProps) {
                 <option value="Net90">Net 90 Days</option>
               </select>
             </div>
-          </div>
 
-          <div className="grid grid-cols-3 gap-5">
-            <div className="col-span-1">
+            {/* Row 4 */}
+            <div className="col-span-6">
+              <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">Office Address</label>
+              <textarea
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                rows={1}
+                placeholder="Building name, Street..."
+                required
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold outline-none transition-all resize-none placeholder:text-slate-400 focus:border-[#c2410c]/40 focus:bg-white"
+              />
+            </div>
+            <div className="col-span-3">
+              <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">City</label>
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                placeholder="City"
+                required
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-semibold outline-none transition-all placeholder:text-slate-400 focus:border-[#c2410c]/40 focus:bg-white"
+              />
+            </div>
+            <div className="col-span-3">
+              <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">State</label>
+              <input
+                type="text"
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                placeholder="State"
+                required
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-semibold outline-none transition-all placeholder:text-slate-400 focus:border-[#c2410c]/40 focus:bg-white"
+              />
+            </div>
+
+            {/* Row 5 */}
+            <div className="col-span-4">
+              <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">Zip Code</label>
+              <input
+                type="text"
+                name="zipCode"
+                value={formData.zipCode}
+                onChange={handleChange}
+                placeholder="Zip Code"
+                required
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-semibold outline-none transition-all placeholder:text-slate-400 focus:border-[#c2410c]/40 focus:bg-white"
+              />
+            </div>
+            <div className="col-span-4">
+              <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">Avg Delivery (Days)</label>
+              <input
+                type="number"
+                name="averageDeliveryTime"
+                value={formData.averageDeliveryTime}
+                onChange={handleChange}
+                min="1"
+                required
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-semibold outline-none transition-all placeholder:text-slate-400 focus:border-[#c2410c]/40 focus:bg-white"
+              />
+            </div>
+            <div className="col-span-4">
               <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">Status</label>
               <select
                 name="status"
@@ -180,18 +257,6 @@ export default function SupplierForm({ open, onClose }: SupplierFormProps) {
                 <option value="inactive">Inactive</option>
                 <option value="blocked">Blocked</option>
               </select>
-            </div>
-            <div className="col-span-2">
-              <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">Office Address</label>
-              <textarea
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                rows={1}
-                placeholder="Building name, Street, City..."
-                required
-                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-semibold outline-none transition-all resize-none placeholder:text-slate-400 focus:border-[#c2410c]/40 focus:bg-white"
-              />
             </div>
           </div>
 

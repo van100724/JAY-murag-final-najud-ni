@@ -28,11 +28,17 @@ export default function Dashboard() {
   const dailyTransactions = todaySales.length;
 
   // Calculate Top Supplier
-  const topSupplier = [...suppliers].sort((a, b) => (b.totalSpent || 0) - (a.totalSpent || 0))[0];
+  const topSupplier = [...suppliers].sort((a, b) => (b.rating || 0) - (a.rating || 0))[0];
   
   const nextDeliveryDate = new Date();
-  nextDeliveryDate.setDate(nextDeliveryDate.getDate() + 1);
+  const deliveryDays = topSupplier?.averageDeliveryTime || 1;
+  nextDeliveryDate.setDate(nextDeliveryDate.getDate() + deliveryDays);
   const deliveryTime = "09:00 AM";
+  
+  const isTomorrow = deliveryDays === 1;
+  const deliveryText = isTomorrow 
+    ? `Tomorrow, ${deliveryTime}`
+    : `${nextDeliveryDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}, ${deliveryTime}`;
   
   const handleSyncWarehouse = () => {
     if (window.confirm('CRITICAL: This will synchronize your terminal with the central warehouse database. All local modifications, custom products, and sales history will be wiped. Proceed with System Sync?')) {
@@ -238,7 +244,7 @@ export default function Dashboard() {
                   <div>
                     <p className="text-[10px] text-slate-500 font-bold uppercase">Next Delivery</p>
                     <p className="text-white font-bold text-sm">
-                      {topSupplier ? `Tomorrow, ${deliveryTime}` : 'N/A'}
+                      {topSupplier ? deliveryText : 'N/A'}
                     </p>
                   </div>
                 </div>

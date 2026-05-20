@@ -1,11 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Boxes, 
-  ShoppingCart, 
-  BarChart3, 
-  Truck, 
-  Bell, 
+import {
+  LayoutDashboard,
+  Boxes,
+  ShoppingCart,
+  BarChart3,
+  Truck,
+  Bell,
   LogOut,
   RefreshCcw
 } from 'lucide-react';
@@ -25,7 +25,7 @@ const allLinks = [
 export default function Sidebar() {
   const { user, logout } = useApp();
   const navigate = useNavigate();
-  
+
   // Filter links based on user role
   const links = allLinks.filter(link => link.roles.includes(user?.role || ''));
 
@@ -59,10 +59,9 @@ export default function Sidebar() {
               key={item.label}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center gap-4 px-5 py-3.5 rounded-xl transition-all duration-300 group relative overflow-hidden ${
-                  isActive
-                    ? 'bg-[#c2410c] text-white shadow-lg shadow-orange-900/20 font-bold'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                `flex items-center gap-4 px-5 py-3.5 rounded-xl transition-all duration-300 group relative overflow-hidden ${isActive
+                  ? 'bg-[#c2410c] text-white shadow-lg shadow-orange-900/20 font-bold'
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`
               }
             >
@@ -75,19 +74,9 @@ export default function Sidebar() {
 
       {/* Sidebar Footer */}
       <div className="p-6 border-t border-white/5 bg-[#1a1a2e]/30 space-y-4">
-        {user?.role === 'cashier' && (
-          <NavLink 
-            to="/pos"
-            className="flex items-center justify-center gap-3 w-full px-5 py-4 rounded-2xl bg-[#c2410c] text-white hover:bg-[#9a3412] transition-all shadow-xl shadow-orange-900/20 group"
-          >
-            <div className="w-6 h-6 rounded-full border-2 border-white/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <span className="text-sm font-bold">+</span>
-            </div>
-            <span className="font-bold text-sm">New Sale</span>
-          </NavLink>
-        )}
 
-        <button 
+
+        <button
           onClick={() => {
             if (window.confirm('CRITICAL: Sync terminal with central warehouse? All local data will be wiped.')) {
               localStorage.clear();
@@ -100,7 +89,7 @@ export default function Sidebar() {
           <span className="font-bold text-sm">Sync Warehouse</span>
         </button>
 
-        <button 
+        <button
           onClick={() => {
             logout();
             navigate('/login');

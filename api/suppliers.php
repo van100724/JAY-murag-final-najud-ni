@@ -24,8 +24,7 @@ switch ($method) {
                 'category' => $row['category'],
                 'status' => $row['status'],
                 'rating' => $row['rating'],
-                'totalOrders' => $row['total_orders'],
-                'totalSpent' => $row['total_spent'],
+
                 'averageDeliveryTime' => $row['average_delivery_time'],
                 'createdAt' => $row['created_at']
             ];
@@ -40,8 +39,8 @@ switch ($method) {
                 throw new Exception('Invalid JSON input');
             }
             $sql = "INSERT INTO suppliers 
-                    (id, name, contact_person, email, phone, address, city, state, zip_code, country, payment_terms, category, status, rating) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    (id, name, contact_person, email, phone, address, city, state, zip_code, country, payment_terms, category, status, rating, average_delivery_time) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
                 $data['id'] ?? null, 
@@ -57,7 +56,8 @@ switch ($method) {
                 $data['paymentTerms'] ?? 'Net30', 
                 $data['category'] ?? null, 
                 $data['status'] ?? 'active', 
-                $data['rating'] ?? 0
+                $data['rating'] ?? 0,
+                $data['averageDeliveryTime'] ?? 1
             ]);
             echo json_encode(['message' => 'Supplier created']);
         } catch (Exception $e) {
@@ -79,7 +79,8 @@ switch ($method) {
         $map = [
             'contactPerson' => 'contact_person',
             'zipCode' => 'zip_code',
-            'paymentTerms' => 'payment_terms'
+            'paymentTerms' => 'payment_terms',
+            'averageDeliveryTime' => 'average_delivery_time'
         ];
 
         $fields = [];

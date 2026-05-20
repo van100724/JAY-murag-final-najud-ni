@@ -76,7 +76,7 @@ interface AppContextType {
 
   // Suppliers
   suppliers: Supplier[];
-  addNewSupplier: (supplier: Omit<Supplier, 'id' | 'createdAt' | 'totalOrders' | 'totalSpent' | 'averageDeliveryTime'>) => void;
+  addNewSupplier: (supplier: Omit<Supplier, 'id' | 'createdAt'>) => void;
   updateExistingSupplier: (id: string, updates: Partial<Supplier>) => void;
   deleteExistingSupplier: (id: string) => void;
   searchSupplier: (query: string) => Supplier[];
@@ -343,7 +343,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const getTopSellingProductsData = (startDate: Date, endDate: Date, limit?: number) => getTopSellingProducts(startDate, endDate, limit);
 
   // Supplier functions
-  const addNewSupplier = async (supplierData: Omit<Supplier, 'id' | 'createdAt' | 'totalOrders' | 'totalSpent' | 'averageDeliveryTime'>) => {
+  const addNewSupplier = async (supplierData: Omit<Supplier, 'id' | 'createdAt'>) => {
     try {
       const id = `SUP-${Date.now()}`;
       await api.addSupplier({ ...supplierData, id });
@@ -798,8 +798,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           paymentTerms: 'Net30' as const,
           status: 'active' as const,
           rating: 4.8,
-          totalOrders: 45,
-          totalSpent: 128500,
           averageDeliveryTime: 3,
           products: ['1', '7', '25', '11', '14', '31'],
           category: 'Hand Tools, Fasteners',
@@ -819,8 +817,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           paymentTerms: 'COD' as const,
           status: 'active' as const,
           rating: 4.5,
-          totalOrders: 32,
-          totalSpent: 345000,
           averageDeliveryTime: 5,
           products: ['5', '22', '27', '2', '21', '28'],
           category: 'Construction, Plumbing',
@@ -840,8 +836,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           paymentTerms: 'Net30' as const,
           status: 'active' as const,
           rating: 4.9,
-          totalOrders: 68,
-          totalSpent: 520000,
           averageDeliveryTime: 2,
           products: ['4', '19', '26', '17'],
           category: 'Power Tools, Garden',
@@ -861,8 +855,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           paymentTerms: 'Net60' as const,
           status: 'active' as const,
           rating: 4.2,
-          totalOrders: 15,
-          totalSpent: 89000,
           averageDeliveryTime: 4,
           products: ['6', '15', '29'],
           category: 'Electrical',
@@ -882,8 +874,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           paymentTerms: 'Net30' as const,
           status: 'active' as const,
           rating: 4.6,
-          totalOrders: 24,
-          totalSpent: 75400,
           averageDeliveryTime: 3,
           products: ['3', '8', '20'],
           category: 'Painting',
@@ -903,8 +893,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           paymentTerms: 'Net30' as const,
           status: 'active' as const,
           rating: 4.75,
-          totalOrders: 41,
-          totalSpent: 182300,
           averageDeliveryTime: 2,
           products: ['9', '12', '30', '18'],
           category: 'Safety, Garden',

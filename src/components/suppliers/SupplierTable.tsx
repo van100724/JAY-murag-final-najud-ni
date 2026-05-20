@@ -25,10 +25,10 @@ export default function SupplierTable() {
     if (!searchTerm) return true;
     const lower = searchTerm.toLowerCase();
     return (
-      supplier.name.toLowerCase().includes(lower) ||
-      supplier.contactPerson.toLowerCase().includes(lower) ||
+      (supplier.name && supplier.name.toLowerCase().includes(lower)) ||
+      (supplier.contactPerson && supplier.contactPerson.toLowerCase().includes(lower)) ||
       (supplier.category && supplier.category.toLowerCase().includes(lower)) ||
-      supplier.email.toLowerCase().includes(lower)
+      (supplier.email && supplier.email.toLowerCase().includes(lower))
     );
   });
 

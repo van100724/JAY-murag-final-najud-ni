@@ -16,17 +16,17 @@ try {
 
     // 2. Seed Premium Suppliers
     $suppliers = [
-        ['SUP-001', 'ABC Hardware Supplies', 'Jose Rizal', 'jose.rizal@abchardware.ph', '+63 917 123 4567', '123 Rizal Ave', 'Manila', 'NCR', '1000', 'Philippines', 'Net30', 'Hand Tools, Fasteners', 'active', 4.80, 45, 128500.00, 3],
-        ['SUP-002', 'BuildPro Materials', 'Andres Bonifacio', 'andres.b@buildpro.ph', '+63 918 234 5678', '456 Bonifacio St', 'Quezon City', 'NCR', '1100', 'Philippines', 'COD', 'Construction, Plumbing', 'active', 4.50, 32, 345000.00, 5],
-        ['SUP-003', 'PowerTools Depot', 'Juan Luna', 'juan.luna@powertools.ph', '+63 919 345 6789', '789 Luna Blvd', 'Cebu City', 'Cebu', '6000', 'Philippines', 'Net30', 'Power Tools, Garden', 'active', 4.90, 68, 520000.00, 2],
-        ['SUP-004', 'Lumina Tech', 'Emilio Aguinaldo', 'emilio.a@luminatech.ph', '+63 920 456 7890', '101 Aguinaldo Hwy', 'Cavite City', 'Cavite', '4100', 'Philippines', 'Net60', 'Electrical', 'active', 4.20, 15, 89000.00, 4],
-        ['SUP-005', 'ColorTech Supplies', 'Apolinario Mabini', 'apolinario.m@colortech.ph', '+63 921 567 8901', '202 Mabini St', 'Davao City', 'Davao del Sur', '8000', 'Philippines', 'Net30', 'Painting', 'active', 4.60, 24, 75400.00, 3],
-        ['SUP-006', 'SafeBuild Inc', 'Gabriela Silang', 'gabriela.s@safebuild.ph', '+63 922 678 9012', '303 Silang Way', 'Vigan City', 'Ilocos Sur', '2700', 'Philippines', 'Net30', 'Safety, Garden', 'active', 4.75, 41, 182300.00, 2]
+        ['SUP-001', 'ABC Hardware Supplies', 'Jose Rizal', 'jose.rizal@abchardware.ph', '+63 917 123 4567', '123 Rizal Ave', 'Manila', 'NCR', '1000', 'Philippines', 'Net30', 'Hand Tools, Fasteners', 'active', 4.80, 3],
+        ['SUP-002', 'BuildPro Materials', 'Andres Bonifacio', 'andres.b@buildpro.ph', '+63 918 234 5678', '456 Bonifacio St', 'Quezon City', 'NCR', '1100', 'Philippines', 'COD', 'Construction, Plumbing', 'active', 4.50, 5],
+        ['SUP-003', 'PowerTools Depot', 'Juan Luna', 'juan.luna@powertools.ph', '+63 919 345 6789', '789 Luna Blvd', 'Cebu City', 'Cebu', '6000', 'Philippines', 'Net30', 'Power Tools, Garden', 'active', 4.90, 2],
+        ['SUP-004', 'Lumina Tech', 'Emilio Aguinaldo', 'emilio.a@luminatech.ph', '+63 920 456 7890', '101 Aguinaldo Hwy', 'Cavite City', 'Cavite', '4100', 'Philippines', 'Net60', 'Electrical', 'active', 4.20, 4],
+        ['SUP-005', 'ColorTech Supplies', 'Apolinario Mabini', 'apolinario.m@colortech.ph', '+63 921 567 8901', '202 Mabini St', 'Davao City', 'Davao del Sur', '8000', 'Philippines', 'Net30', 'Painting', 'active', 4.60, 3],
+        ['SUP-006', 'SafeBuild Inc', 'Gabriela Silang', 'gabriela.s@safebuild.ph', '+63 922 678 9012', '303 Silang Way', 'Vigan City', 'Ilocos Sur', '2700', 'Philippines', 'Net30', 'Safety, Garden', 'active', 4.75, 2]
     ];
 
     $supSql = "INSERT INTO suppliers 
-        (id, name, contact_person, email, phone, address, city, state, zip_code, country, payment_terms, category, status, rating, total_orders, total_spent, average_delivery_time) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        (id, name, contact_person, email, phone, address, city, state, zip_code, country, payment_terms, category, status, rating, average_delivery_time) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $supStmt = $pdo->prepare($supSql);
     foreach ($suppliers as $sup) {
         $supStmt->execute($sup);

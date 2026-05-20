@@ -13,8 +13,6 @@ export interface Supplier {
   paymentTerms: 'COD' | 'Net30' | 'Net60' | 'Net90';
   status: 'active' | 'inactive' | 'blocked';
   rating: number; // 1-5
-  totalOrders: number;
-  totalSpent: number;
   averageDeliveryTime: number; // days
   products: string[]; // product IDs they supply
   category: string; // added for UI categories
@@ -102,8 +100,6 @@ let suppliers: Supplier[] = [
     paymentTerms: 'Net30',
     status: 'active',
     rating: 4.8,
-    totalOrders: 45,
-    totalSpent: 850000,
     averageDeliveryTime: 3,
     products: ['22', '11', '14', '31'],
     category: 'Steel, Fasteners',
@@ -124,8 +120,6 @@ let suppliers: Supplier[] = [
     paymentTerms: 'Net60',
     status: 'active',
     rating: 4.5,
-    totalOrders: 32,
-    totalSpent: 1200000,
     averageDeliveryTime: 5,
     products: ['5', '27'],
     category: 'Construction, Bulk',
@@ -146,8 +140,6 @@ let suppliers: Supplier[] = [
     paymentTerms: 'COD',
     status: 'active',
     rating: 4.3,
-    totalOrders: 18,
-    totalSpent: 450000,
     averageDeliveryTime: 2,
     products: ['2', '21', '28'],
     category: 'Plumbing, Fixtures',
@@ -168,8 +160,6 @@ let suppliers: Supplier[] = [
     paymentTerms: 'Net30',
     status: 'active',
     rating: 4.9,
-    totalOrders: 25,
-    totalSpent: 620000,
     averageDeliveryTime: 3,
     products: ['6', '15', '29'],
     category: 'Electrical, Power',
@@ -190,8 +180,6 @@ let suppliers: Supplier[] = [
     paymentTerms: 'Net30',
     status: 'active',
     rating: 4.7,
-    totalOrders: 14,
-    totalSpent: 1850000,
     averageDeliveryTime: 4,
     products: ['4', '19', '26', '17'],
     category: 'Power Tools, Machinery',
@@ -208,13 +196,11 @@ let ratings: SupplierRating[] = [];
 /**
  * Add a new supplier
  */
-export const addSupplier = (supplier: Omit<Supplier, 'id' | 'createdAt' | 'totalOrders' | 'totalSpent' | 'averageDeliveryTime'>): Supplier => {
+export const addSupplier = (supplier: Omit<Supplier, 'id' | 'createdAt' | 'averageDeliveryTime'>): Supplier => {
   const newSupplier: Supplier = {
     ...supplier,
     id: generateId(),
     createdAt: new Date(),
-    totalOrders: 0,
-    totalSpent: 0,
     averageDeliveryTime: 0,
   };
   suppliers.push(newSupplier);
@@ -303,7 +289,7 @@ export const getSuppliersByStatus = (status: 'active' | 'inactive' | 'blocked'):
  */
 export const getTopSuppliers = (limit: number = 10): Supplier[] => {
   return [...suppliers]
-    .sort((a, b) => b.totalSpent - a.totalSpent)
+    .sort((a, b) => b.rating - a.rating)
     .slice(0, limit);
 };
 
@@ -349,8 +335,6 @@ export const createPurchaseOrder = (
   purchaseOrders.push(purchaseOrder);
 
   // Update supplier stats
-  supplier.totalOrders++;
-  supplier.totalSpent += total;
   supplier.lastOrderDate = new Date();
 
   return purchaseOrder;
@@ -422,9 +406,7 @@ export const markAsDelivered = (orderId: string): PurchaseOrder | null => {
     const deliveryDays = Math.ceil(
       (po.actualDelivery.getTime() - po.orderDate.getTime()) / (1000 * 60 * 60 * 24)
     );
-    supplier.averageDeliveryTime = Math.ceil(
-      (supplier.averageDeliveryTime * (supplier.totalOrders - 1) + deliveryDays) / supplier.totalOrders
-    );
+    supplier.averageDeliveryTime = deliveryDays;
   }
 
   return po;
@@ -626,8 +608,8 @@ export const getSupplierPerformance = (supplierId: string): SupplierPerformance 
   return {
     supplierId,
     supplierName: supplier.name,
-    totalOrders: supplier.totalOrders,
-    totalSpent: supplier.totalSpent,
+    totalOrders: 0,
+    totalSpent: 0,
     onTimeDeliveryRate: onTimeRate,
     averageRating: getAverageRating(supplierId),
     qualityScore: avgQuality,
@@ -662,13 +644,18 @@ export const getSupplierSpendingReport = (): Array<{
   averageOrderValue: number;
 }> => {
   return suppliers
-    .map(s => ({
-      supplierId: s.id,
-      supplierName: s.name,
-      totalSpent: s.totalSpent,
-      orderCount: s.totalOrders,
-      averageOrderValue: s.totalOrders > 0 ? s.totalSpent / s.totalOrders : 0,
-    }))
+    .map(s => {
+      const supplierOrders = purchaseOrders.filter(po => po.supplierId === s.id && po.status !== 'cancelled');
+      const totalSpent = supplierOrders.reduce((sum, po) => sum + po.total, 0);
+      const orderCount = supplierOrders.length;
+      return {
+        supplierId: s.id,
+        supplierName: s.name,
+        totalSpent,
+        orderCount,
+        averageOrderValue: orderCount > 0 ? totalSpent / orderCount : 0,
+      };
+    })
     .sort((a, b) => b.totalSpent - a.totalSpent);
 };
 
@@ -720,7 +707,6 @@ export const getDeliveryPerformanceReport = (): Array<{
   averageDeliveryDays: number;
 }> => {
   return suppliers
-    .filter(s => s.totalOrders > 0)
     .map(s => {
       const deliveredOrders = purchaseOrders.filter(
         po => po.supplierId === s.id && po.status === 'delivered'

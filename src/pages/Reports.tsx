@@ -12,11 +12,11 @@ export default function Reports() {
 
   const report = useMemo(() => {
     return getSalesReportData(dateRange.start, dateRange.end);
-  }, [getSalesReportData, dateRange]);
+  }, [getSalesReportData, dateRange, sales]);
 
   const topProducts = useMemo(() => {
     return getTopSellingProducts(dateRange.start, dateRange.end, 10);
-  }, [getTopSellingProducts, dateRange]);
+  }, [getTopSellingProducts, dateRange, sales]);
 
   const chartData = useMemo(() => {
     const start = new Date(dateRange.start);
