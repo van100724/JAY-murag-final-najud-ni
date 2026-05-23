@@ -88,8 +88,14 @@ export const api = {
     });
     return res.json();
   },
+  async cancelSale(id: string) {
+    const res = await fetch(`${API_BASE_URL}/sales.php?id=${id}`, {
+      method: 'PUT',
+    });
+    return res.json();
+  },
   async seedDemoData() {
-    const res = await fetch(`${API_BASE_URL}/seed_demo_data.php`, {
+    const res = await fetch(`${API_BASE_URL}/populate_db.php`, {
       method: 'POST',
     });
     return res.json();

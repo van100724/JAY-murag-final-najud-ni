@@ -49,7 +49,7 @@ export default function Dashboard() {
   };
 
   const handleSeedDemoData = async () => {
-    if (window.confirm('This will load a beautiful, high-fidelity mock dataset (18+ products with real images, 5 premium suppliers, 120+ historical sales distributed over 30 days, active notifications, and detailed stats) for your presentation. Proceed with Seeding?')) {
+    if (window.confirm('This will load a beautiful, high-fidelity dataset (120 products with real images, 6 premium suppliers, 120+ historical sales distributed over 30 days, active notifications, and detailed stats) for your presentation. Proceed with Seeding?')) {
       setIsSeeding(true);
       try {
         const isOnline = await seedDemoDatabase();

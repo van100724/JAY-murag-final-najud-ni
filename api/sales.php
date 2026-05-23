@@ -116,5 +116,59 @@ switch ($method) {
             echo json_encode(['error' => $e->getMessage()]);
         }
         break;
+
+    case 'PUT':
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ID required']);
+            break;
+        }
+        $pdo->beginTransaction();
+        try {
+            // Get current sale status
+            $stmt = $pdo->prepare("SELECT status FROM sales WHERE id = ?");
+            $stmt->execute([$id]);
+            $sale = $stmt->fetch();
+            
+            if (!$sale) {
+                throw new Exception('Sale not found');
+            }
+            
+            if ($sale['status'] === 'cancelled') {
+                throw new Exception('Sale is already cancelled');
+            }
+            
+            // Mark sale as cancelled
+            $updateSale = $pdo->prepare("UPDATE sales SET status = 'cancelled' WHERE id = ?");
+            $updateSale->execute([$id]);
+            
+            // Get sale items to restore product stock
+            $itemStmt = $pdo->prepare("SELECT product_id, quantity FROM sale_items WHERE sale_id = ?");
+            $itemStmt->execute([$id]);
+            $items = $itemStmt->fetchAll();
+            
+            foreach ($items as $item) {
+                $restoreStock = $pdo->prepare("UPDATE products SET quantity = quantity + ? WHERE id = ?");
+                $restoreStock->execute([$item['quantity'], $item['product_id']]);
+                
+                // If stock is now healthy, remove the low-stock alert
+                $prodStmt = $pdo->prepare("SELECT name, quantity, reorder_level FROM products WHERE id = ?");
+                $prodStmt->execute([$item['product_id']]);
+                $product = $prodStmt->fetch();
+                
+                if ($product && $product['quantity'] > $product['reorder_level']) {
+                    $pdo->prepare("DELETE FROM alerts WHERE product_id = ? AND type = 'low-stock'")->execute([$item['product_id']]);
+                }
+            }
+            
+            $pdo->commit();
+            echo json_encode(['success' => true, 'message' => 'Sale cancelled and stock restored successfully']);
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+        break;
 }
 ?>

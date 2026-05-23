@@ -65,8 +65,9 @@ export default function SupplierForm({ open, onClose }: SupplierFormProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="relative w-full max-w-2xl bg-white rounded-[35px] border border-slate-200 shadow-[0_30px_80px_rgba(15,23,42,0.18)] flex flex-col max-h-[90vh] overflow-hidden translate-y-16">
+    <>
+      <div className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm animate-fade-in" onClick={onClose} />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl bg-white rounded-[35px] border border-slate-200 shadow-[0_30px_80px_rgba(15,23,42,0.18)] flex flex-col max-h-[90vh] overflow-hidden animate-fade-in text-slate-800">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 px-8 py-5 bg-[#fafafa] flex-shrink-0">
           <div className="flex items-center gap-4">
@@ -279,6 +280,6 @@ export default function SupplierForm({ open, onClose }: SupplierFormProps) {
           </div>
         </form>
       </div>
-    </div>
+    </>
   );
 }

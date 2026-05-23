@@ -1,6 +1,13 @@
 import { Search, Bell } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useApp } from '../../contexts/AppContext';
 
 export default function Topbar() {
+  const navigate = useNavigate();
+  const { getLowStock, getInventoryAlerts } = useApp();
+  
+  const totalNotifications = getLowStock().length + getInventoryAlerts().length;
+
   return (
     <header className="h-20 border-b border-white/5 bg-[#f8fafc] px-6 flex items-center justify-between text-slate-800">
       <div className="flex items-center gap-2">
@@ -23,9 +30,14 @@ export default function Topbar() {
       </div>
 
       <div className="flex items-center gap-6">
-        <button className="relative text-slate-400 hover:text-[#92400e] transition-colors">
+        <button 
+          onClick={() => navigate('/notifications')}
+          className="relative text-slate-400 hover:text-[#92400e] transition-colors cursor-pointer"
+        >
           <Bell size={22} />
-          <div className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border-2 border-[#f8fafc]" />
+          {totalNotifications > 0 && (
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[#f8fafc]" />
+          )}
         </button>
 
         <div className="flex items-center gap-3 border-l border-slate-200 pl-6">

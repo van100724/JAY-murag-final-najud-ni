@@ -68,7 +68,7 @@ interface AppContextType {
     total?: number,
     change?: number
   ) => Promise<any>;
-  cancelExistingSale: (saleId: string) => void;
+  cancelExistingSale: (saleId: string) => Promise<void>;
   getSalesData: () => Sale[];
   getDailySalesReport: (date: Date) => any;
   getSalesReportData: (startDate: Date, endDate: Date) => any;
@@ -329,9 +329,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   };
 
-  const cancelExistingSale = (saleId: string) => {
-    cancelSale(saleId);
-    setSales(getAllSales());
+  const cancelExistingSale = async (saleId: string) => {
+    try {
+      await api.cancelSale(saleId);
+      await refreshAllData();
+    } catch (err) {
+      console.error('Failed to cancel sale:', err);
+    }
   };
 
   const getSalesData = () => sales;
@@ -454,7 +458,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 10,
           supplier: 'ABC Hardware Supplies',
           description: '16oz forged steel claw hammer with anti-vibration grip',
-          image: 'https://images.unsplash.com/photo-1586864387917-f53bc264434a?w=600&h=600&fit=crop',
+          image: '/IMG/CONS/Masonry Hammer.jpg',
         },
         {
           id: '7',
@@ -467,7 +471,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 15,
           supplier: 'ABC Hardware Supplies',
           description: 'High-visibility 8-meter retractable steel tape measure',
-          image: 'https://images.unsplash.com/photo-1586864387789-628af9fea93f?w=600&h=600&fit=crop',
+          image: '/IMG/CONS/Measuring Tape.jpg',
         },
         {
           id: '25',
@@ -480,7 +484,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 10,
           supplier: 'ABC Hardware Supplies',
           description: 'Chrome vanadium steel adjustable wrench, 12-inch',
-          image: 'https://images.unsplash.com/photo-1549887534-1541e9326642?w=600&h=600&fit=crop',
+          image: '/IMG/PLU/Pipe Wrench.jpg',
         },
         {
           id: '4',
@@ -493,7 +497,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 5,
           supplier: 'PowerTools Depot',
           description: 'High-torque 18V brushless drill with 2x 4.0Ah batteries',
-          image: 'https://images.unsplash.com/photo-1504148455328-4972fefebfee?w=600&h=600&fit=crop',
+          image: '/IMG/PWR/Cordless Drill.jpg',
         },
         {
           id: '19',
@@ -506,7 +510,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 5,
           supplier: 'PowerTools Depot',
           description: '900W professional angle grinder with safety guard',
-          image: 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=600&h=600&fit=crop',
+          image: '/IMG/PWR/Angle Grinder.jpg',
         },
         {
           id: '26',
@@ -519,7 +523,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 4,
           supplier: 'PowerTools Depot',
           description: 'Heavy duty circular saw with laser guide',
-          image: 'https://images.unsplash.com/photo-1530124560676-41bc1275d4d4?w=600&h=600&fit=crop',
+          image: '/IMG/PWR/Circular Saw.jpg',
         },
         {
           id: '5',
@@ -532,7 +536,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 100,
           supplier: 'BuildPro Materials',
           description: 'Standard Type 1P Portland cement for general construction',
-          image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&h=600&fit=crop',
+          image: '/IMG/CONS/Cement.jpg',
         },
         {
           id: '22',
@@ -545,7 +549,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 200,
           supplier: 'BuildPro Materials',
           description: 'Grade 33 structural steel rebar, 10mm diameter',
-          image: 'https://images.unsplash.com/photo-1516156008625-3a9d6067fab5?w=600&h=600&fit=crop',
+          image: '/IMG/CONS/Steel Bar.jpg',
         },
         {
           id: '27',
@@ -558,7 +562,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 500,
           supplier: 'BuildPro Materials',
           description: 'Load-bearing concrete hollow block, 4-inch width',
-          image: 'https://images.unsplash.com/photo-1517646281554-aa63e1672323?w=600&h=600&fit=crop',
+          image: '/IMG/CONS/Hollow Blocks.jpg',
         },
         {
           id: '2',
@@ -571,7 +575,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 30,
           supplier: 'BuildPro Materials',
           description: 'Blue PVC pipe for water main lines, 10ft length',
-          image: 'https://images.unsplash.com/photo-1542013936693-884638332954?w=600&h=600&fit=crop',
+          image: '/IMG/PLU/PVC Pipe.jpg',
         },
         {
           id: '21',
@@ -584,7 +588,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 5,
           supplier: 'BuildPro Materials',
           description: 'Brushed nickel single-handle pull-down kitchen faucet',
-          image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=600&h=600&fit=crop',
+          image: '/IMG/PLU/Faucet.jpg',
         },
         {
           id: '28',
@@ -597,7 +601,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 50,
           supplier: 'BuildPro Materials',
           description: 'Thread seal tape for plumbing joints',
-          image: 'https://images.unsplash.com/photo-1595467795023-ec64c581297e?w=600&h=600&fit=crop',
+          image: '/IMG/PLU/Teflon Tape.jpg',
         },
         {
           id: '6',
@@ -610,7 +614,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 50,
           supplier: 'Lumina Tech',
           description: 'Energy-saving 12W LED bulb, 6500K cool daylight',
-          image: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=600&h=600&fit=crop',
+          image: '/IMG/ELE/LED Bulb.jpg',
         },
         {
           id: '15',
@@ -623,7 +627,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 10,
           supplier: 'Lumina Tech',
           description: '10-meter extension cord with 3-way outlet and surge protection',
-          image: 'https://images.unsplash.com/photo-1558538337-aab28236224d?w=600&h=600&fit=crop',
+          image: '/IMG/ELE/Extension Cord.jpg',
         },
         {
           id: '29',
@@ -636,7 +640,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 5,
           supplier: 'Lumina Tech',
           description: 'Stranded copper electrical wire, 150-meter roll',
-          image: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=600&h=600&fit=crop',
+          image: '/IMG/ELE/Electrical Wire.jpg',
         },
         {
           id: '3',
@@ -649,7 +653,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 12,
           supplier: 'ColorTech Supplies',
           description: '9-inch non-drip paint roller with metal tray',
-          image: 'https://images.unsplash.com/photo-1589939705384-5185138a04b9?w=600&h=600&fit=crop',
+          image: '/IMG/CONS/Concrete Mixer.jpg',
         },
         {
           id: '8',
@@ -662,7 +666,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 10,
           supplier: 'ColorTech Supplies',
           description: 'Premium flat white latex paint, 4-liter gallon',
-          image: 'https://images.unsplash.com/photo-1562591176-3293399991cb?w=600&h=600&fit=crop',
+          image: '/IMG/CONS/Cement.jpg',
         },
         {
           id: '20',
@@ -675,7 +679,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 15,
           supplier: 'ColorTech Supplies',
           description: 'Grade A premium paint thinner for oil-based paints',
-          image: 'https://images.unsplash.com/photo-1587582423116-ec07293f0395?w=600&h=600&fit=crop',
+          image: '/IMG/CONS/Tile Adhesive.jpg',
         },
         {
           id: '9',
@@ -688,7 +692,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 15,
           supplier: 'SafeBuild Inc',
           description: 'Reinforced yellow hard hat with adjustable suspension',
-          image: 'https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=600&h=600&fit=crop',
+          image: '/IMG/CONS/Safety Helmet.jpg',
         },
         {
           id: '12',
@@ -701,7 +705,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 3,
           supplier: 'SafeBuild Inc',
           description: 'Solar-powered auto-darkening welding helmet, DIN 9-13',
-          image: 'https://images.unsplash.com/photo-1530124560676-41bc1275d4d4?w=600&h=600&fit=crop',
+          image: '/IMG/CONS/Safety Helmet.jpg',
         },
         {
           id: '30',
@@ -714,7 +718,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 10,
           supplier: 'SafeBuild Inc',
           description: 'Box of 20 industrial-grade N95 dust masks',
-          image: 'https://images.unsplash.com/photo-1584622781564-1d9876a13301?w=600&h=600&fit=crop',
+          image: '/IMG/CONS/Safety Helmet.jpg',
         },
         {
           id: '11',
@@ -727,7 +731,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 25,
           supplier: 'ABC Hardware Supplies',
           description: 'Box of 100 zinc-plated wood screws',
-          image: 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=600&h=600&fit=crop',
+          image: '/IMG/FAS/Wood Screw.jpg',
         },
         {
           id: '14',
@@ -740,7 +744,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 50,
           supplier: 'ABC Hardware Supplies',
           description: 'Polished steel common nails, sold per kilogram',
-          image: 'https://images.unsplash.com/photo-1533062604082-799026992d9f?w=600&h=600&fit=crop',
+          image: '/IMG/FAS/Brad Nail.jpg',
         },
         {
           id: '31',
@@ -753,7 +757,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 100,
           supplier: 'ABC Hardware Supplies',
           description: 'Heavy duty steel expansion sleeve bolt for concrete',
-          image: 'https://images.unsplash.com/photo-1584982251278-dfad634711f9?w=600&h=600&fit=crop',
+          image: '/IMG/FAS/Expansion Bolt.jpg',
         },
         {
           id: '18',
@@ -766,7 +770,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 5,
           supplier: 'SafeBuild Inc',
           description: 'Anti-kink reinforced garden hose, 30-meter length',
-          image: 'https://images.unsplash.com/photo-1592178036041-073b379308be?w=600&h=600&fit=crop',
+          image: '/IMG/PLU/Water Hose.jpg',
         },
         {
           id: '17',
@@ -779,7 +783,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           reorderLevel: 3,
           supplier: 'PowerTools Depot',
           description: 'Deep-dish steel wheelbarrow with pneumatic tire',
-          image: 'https://images.unsplash.com/photo-1591955506264-3f5a6834570a?w=600&h=600&fit=crop',
+          image: '/IMG/CONS/Wheelbarrow.jpg',
         }
       ];
 

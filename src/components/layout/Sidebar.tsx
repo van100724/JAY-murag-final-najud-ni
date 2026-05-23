@@ -7,7 +7,8 @@ import {
   Truck,
   Bell,
   LogOut,
-  RefreshCcw
+  RefreshCcw,
+  CalendarClock
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +18,7 @@ const allLinks = [
   { label: 'Dashboard', path: '/', icon: LayoutDashboard, roles: ['admin'] },
   { label: 'Inventory', path: '/inventory', icon: Boxes, roles: ['admin'] },
   { label: 'POS Terminal', path: '/pos', icon: ShoppingCart, roles: ['cashier'] },
+  { label: 'Sales History', path: '/sales', icon: CalendarClock, roles: ['admin', 'cashier'] },
   { label: 'Reports', path: '/reports', icon: BarChart3, roles: ['admin'] },
   { label: 'Suppliers', path: '/suppliers', icon: Truck, roles: ['admin'] },
   { label: 'Notifications', path: '/notifications', icon: Bell, roles: ['admin'] },

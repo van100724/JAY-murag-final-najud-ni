@@ -35,40 +35,40 @@ try {
     // 3. Seed High-Fidelity Products
     $products = [
         // id, name, sku, category, price, cost_price, quantity, reorder_level, supplier, description, image
-        ['1', 'Industrial Claw Hammer 16oz', 'HTL-HAM-001', 'Hand Tools', 450.00, 280.00, 34, 10, 'ABC Hardware Supplies', '16oz forged steel claw hammer with anti-vibration grip', 'https://images.unsplash.com/photo-1586864387917-f53bc264434a?w=600&h=600&fit=crop'],
-        ['7', 'Precision Tape Measure 8m', 'HTL-TPE-007', 'Hand Tools', 280.00, 150.00, 45, 15, 'ABC Hardware Supplies', 'High-visibility 8-meter retractable steel tape measure', 'https://images.unsplash.com/photo-1586864387789-628af9fea93f?w=600&h=600&fit=crop'],
-        ['25', 'Adjustable Wrench 12"', 'HTL-WRN-025', 'Hand Tools', 650.00, 420.00, 8, 10, 'ABC Hardware Supplies', 'Chrome vanadium steel adjustable wrench, 12-inch', 'https://images.unsplash.com/photo-1549887534-1541e9326642?w=600&h=600&fit=crop'],
+        ['1', 'Industrial Claw Hammer 16oz', 'HTL-HAM-001', 'Hand Tools', 450.00, 280.00, 34, 10, 'ABC Hardware Supplies', '16oz forged steel claw hammer with anti-vibration grip', '/IMG/CONS/Masonry Hammer.jpg'],
+        ['7', 'Precision Tape Measure 8m', 'HTL-TPE-007', 'Hand Tools', 280.00, 150.00, 45, 15, 'ABC Hardware Supplies', 'High-visibility 8-meter retractable steel tape measure', '/IMG/CONS/Measuring Tape.jpg'],
+        ['25', 'Adjustable Wrench 12"', 'HTL-WRN-025', 'Hand Tools', 650.00, 420.00, 8, 10, 'ABC Hardware Supplies', 'Chrome vanadium steel adjustable wrench, 12-inch', '/IMG/PLU/Pipe Wrench.jpg'],
         
-        ['4', 'Brushless Cordless Drill 18V', 'PWR-DRL-004', 'Power Tools', 4850.00, 3200.00, 12, 5, 'PowerTools Depot', 'High-torque 18V brushless drill with 2x 4.0Ah batteries', 'https://images.unsplash.com/photo-1504148455328-4972fefebfee?w=600&h=600&fit=crop'],
-        ['19', 'Professional Angle Grinder 4"', 'PWR-GRN-019', 'Power Tools', 3200.00, 2100.00, 15, 5, 'PowerTools Depot', '900W professional angle grinder with safety guard', 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=600&h=600&fit=crop'],
-        ['26', 'Circular Saw 1500W', 'PWR-SAW-026', 'Power Tools', 5400.00, 3800.00, 3, 4, 'PowerTools Depot', 'Heavy duty circular saw with laser guide', 'https://images.unsplash.com/photo-1530124560676-41bc1275d4d4?w=600&h=600&fit=crop'],
+        ['4', 'Brushless Cordless Drill 18V', 'PWR-DRL-004', 'Power Tools', 4850.00, 3200.00, 12, 5, 'PowerTools Depot', 'High-torque 18V brushless drill with 2x 4.0Ah batteries', '/IMG/PWR/Cordless Drill.jpg'],
+        ['19', 'Professional Angle Grinder 4"', 'PWR-GRN-019', 'Power Tools', 3200.00, 2100.00, 15, 5, 'PowerTools Depot', '900W professional angle grinder with safety guard', '/IMG/PWR/Angle Grinder.jpg'],
+        ['26', 'Circular Saw 1500W', 'PWR-SAW-026', 'Power Tools', 5400.00, 3800.00, 3, 4, 'PowerTools Depot', 'Heavy duty circular saw with laser guide', '/IMG/PWR/Circular Saw.jpg'],
 
-        ['5', 'Premium Portland Cement 40kg', 'CON-CMT-005', 'Construction', 285.00, 240.00, 450, 100, 'BuildPro Materials', 'Standard Type 1P Portland cement for general construction', 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&h=600&fit=crop'],
-        ['22', 'Steel Rebar 10mm x 6m', 'CON-RBR-022', 'Construction', 245.00, 190.00, 800, 200, 'BuildPro Materials', 'Grade 33 structural steel rebar, 10mm diameter', 'https://images.unsplash.com/photo-1516156008625-3a9d6067fab5?w=600&h=600&fit=crop'],
-        ['27', 'Hollow Block 4" Standard', 'CON-BLK-027', 'Construction', 15.00, 11.00, 2500, 500, 'BuildPro Materials', 'Load-bearing concrete hollow block, 4-inch width', 'https://images.unsplash.com/photo-1517646281554-aa63e1672323?w=600&h=600&fit=crop'],
+        ['5', 'Premium Portland Cement 40kg', 'CON-CMT-005', 'Construction', 285.00, 240.00, 450, 100, 'BuildPro Materials', 'Standard Type 1P Portland cement for general construction', '/IMG/CONS/Cement.jpg'],
+        ['22', 'Steel Rebar 10mm x 6m', 'CON-RBR-022', 'Construction', 245.00, 190.00, 800, 200, 'BuildPro Materials', 'Grade 33 structural steel rebar, 10mm diameter', '/IMG/CONS/Steel Bar.jpg'],
+        ['27', 'Hollow Block 4" Standard', 'CON-BLK-027', 'Construction', 15.00, 11.00, 2500, 500, 'BuildPro Materials', 'Load-bearing concrete hollow block, 4-inch width', '/IMG/CONS/Hollow Blocks.jpg'],
 
-        ['2', 'PVC Pipe 2" (Schedule 40)', 'PLU-PVC-002', 'Plumbing', 480.00, 350.00, 120, 30, 'BuildPro Materials', 'Blue PVC pipe for water main lines, 10ft length', 'https://images.unsplash.com/photo-1542013936693-884638332954?w=600&h=600&fit=crop'],
-        ['21', 'Modern Kitchen Faucet', 'PLU-FCT-021', 'Plumbing', 2450.00, 1600.00, 14, 5, 'BuildPro Materials', 'Brushed nickel single-handle pull-down kitchen faucet', 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=600&h=600&fit=crop'],
-        ['28', 'Teflon Tape 1/2"', 'PLU-TFE-028', 'Plumbing', 25.00, 12.00, 300, 50, 'BuildPro Materials', 'Thread seal tape for plumbing joints', 'https://images.unsplash.com/photo-1595467795023-ec64c581297e?w=600&h=600&fit=crop'],
+        ['2', 'PVC Pipe 2" (Schedule 40)', 'PLU-PVC-002', 'Plumbing', 480.00, 350.00, 120, 30, 'BuildPro Materials', 'Blue PVC pipe for water main lines, 10ft length', '/IMG/PLU/PVC Pipe.jpg'],
+        ['21', 'Modern Kitchen Faucet', 'PLU-FCT-021', 'Plumbing', 2450.00, 1600.00, 14, 5, 'BuildPro Materials', 'Brushed nickel single-handle pull-down kitchen faucet', '/IMG/PLU/Faucet.jpg'],
+        ['28', 'Teflon Tape 1/2"', 'PLU-TFE-028', 'Plumbing', 25.00, 12.00, 300, 50, 'BuildPro Materials', 'Thread seal tape for plumbing joints', '/IMG/PLU/Teflon Tape.jpg'],
 
-        ['6', 'LED Bulb 12W (Daylight)', 'ELE-LGT-006', 'Electrical', 185.00, 110.00, 240, 50, 'Lumina Tech', 'Energy-saving 12W LED bulb, 6500K cool daylight', 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=600&h=600&fit=crop'],
-        ['15', 'Heavy Duty Extension 10m', 'ELE-EXT-015', 'Electrical', 850.00, 520.00, 28, 10, 'Lumina Tech', '10-meter extension cord with 3-way outlet and surge protection', 'https://images.unsplash.com/photo-1558538337-aab28236224d?w=600&h=600&fit=crop'],
-        ['29', 'THHN Wire 2.0mm (150m)', 'ELE-WRE-029', 'Electrical', 3400.00, 2800.00, 15, 5, 'Lumina Tech', 'Stranded copper electrical wire, 150-meter roll', 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=600&h=600&fit=crop'],
+        ['6', 'LED Bulb 12W (Daylight)', 'ELE-LGT-006', 'Electrical', 185.00, 110.00, 240, 50, 'Lumina Tech', 'Energy-saving 12W LED bulb, 6500K cool daylight', '/IMG/ELE/LED Bulb.jpg'],
+        ['15', 'Heavy Duty Extension 10m', 'ELE-EXT-015', 'Electrical', 850.00, 520.00, 28, 10, 'Lumina Tech', '10-meter extension cord with 3-way outlet and surge protection', '/IMG/ELE/Extension Cord.jpg'],
+        ['29', 'THHN Wire 2.0mm (150m)', 'ELE-WRE-029', 'Electrical', 3400.00, 2800.00, 15, 5, 'Lumina Tech', 'Stranded copper electrical wire, 150-meter roll', '/IMG/ELE/Electrical Wire.jpg'],
 
         ['3', 'Professional Roller Set', 'PNT-RLR-003', 'Painting', 320.00, 180.00, 42, 12, 'ColorTech Supplies', '9-inch non-drip paint roller with metal tray', 'https://images.unsplash.com/photo-1589939705384-5185138a04b9?w=600&h=600&fit=crop'],
         ['8', 'Latex Paint White (4L)', 'PNT-WHT-008', 'Painting', 680.00, 510.00, 35, 10, 'ColorTech Supplies', 'Premium flat white latex paint, 4-liter gallon', 'https://images.unsplash.com/photo-1562591176-3293399991cb?w=600&h=600&fit=crop'],
         ['20', 'Paint Thinner 1L', 'PNT-THN-020', 'Painting', 180.00, 110.00, 3, 15, 'ColorTech Supplies', 'Grade A premium paint thinner for oil-based paints', 'https://images.unsplash.com/photo-1587582423116-ec07293f0395?w=600&h=600&fit=crop'],
 
-        ['9', 'Industrial Safety Helmet', 'SAF-HLM-009', 'Safety', 350.00, 210.00, 48, 15, 'SafeBuild Inc', 'Reinforced yellow hard hat with adjustable suspension', 'https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=600&h=600&fit=crop'],
+        ['9', 'Industrial Safety Helmet', 'SAF-HLM-009', 'Safety', 350.00, 210.00, 48, 15, 'SafeBuild Inc', 'Reinforced yellow hard hat with adjustable suspension', '/IMG/CONS/Safety Helmet.jpg'],
         ['12', 'Auto-Darkening Welding Mask', 'SAF-WLD-012', 'Safety', 2850.00, 1950.00, 2, 3, 'SafeBuild Inc', 'Solar-powered auto-darkening welding helmet, DIN 9-13', 'https://images.unsplash.com/photo-1530124560676-41bc1275d4d4?w=600&h=600&fit=crop'],
         ['30', 'N95 Respirator Mask (Box)', 'SAF-MSK-030', 'Safety', 850.00, 450.00, 40, 10, 'SafeBuild Inc', 'Box of 20 industrial-grade N95 dust masks', 'https://images.unsplash.com/photo-1584622781564-1d9876a13301?w=600&h=600&fit=crop'],
 
-        ['11', 'Wood Screw #8 x 1" (Box)', 'FAS-SCR-011', 'Fasteners', 180.00, 95.00, 150, 25, 'ABC Hardware Supplies', 'Box of 100 zinc-plated wood screws', 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=600&h=600&fit=crop'],
-        ['14', 'Common Nail 3" (kg)', 'FAS-NAL-014', 'Fasteners', 95.00, 65.00, 300, 50, 'ABC Hardware Supplies', 'Polished steel common nails, sold per kilogram', 'https://images.unsplash.com/photo-1533062604082-799026992d9f?w=600&h=600&fit=crop'],
-        ['31', 'Expansion Bolt 3/8"', 'FAS-BLT-031', 'Fasteners', 45.00, 28.00, 500, 100, 'ABC Hardware Supplies', 'Heavy duty steel expansion sleeve bolt for concrete', 'https://images.unsplash.com/photo-1584982251278-dfad634711f9?w=600&h=600&fit=crop'],
+        ['11', 'Wood Screw #8 x 1" (Box)', 'FAS-SCR-011', 'Fasteners', 180.00, 95.00, 150, 25, 'ABC Hardware Supplies', 'Box of 100 zinc-plated wood screws', '/IMG/FAS/Wood Screw.jpg'],
+        ['14', 'Common Nail 3" (kg)', 'FAS-NAL-014', 'Fasteners', 95.00, 65.00, 300, 50, 'ABC Hardware Supplies', 'Polished steel common nails, sold per kilogram', '/IMG/FAS/Brad Nail.jpg'],
+        ['31', 'Expansion Bolt 3/8"', 'FAS-BLT-031', 'Fasteners', 45.00, 28.00, 500, 100, 'ABC Hardware Supplies', 'Heavy duty steel expansion sleeve bolt for concrete', '/IMG/FAS/Expansion Bolt.jpg'],
 
-        ['18', 'Garden Hose 30m Heavy', 'GAR-HSE-018', 'Garden', 1250.00, 850.00, 22, 5, 'SafeBuild Inc', 'Anti-kink reinforced garden hose, 30-meter length', 'https://images.unsplash.com/photo-1592178036041-073b379308be?w=600&h=600&fit=crop'],
-        ['17', 'Industrial Wheelbarrow', 'GAR-WHL-017', 'Garden', 3800.00, 2900.00, 8, 3, 'PowerTools Depot', 'Deep-dish steel wheelbarrow with pneumatic tire', 'https://images.unsplash.com/photo-1591955506264-3f5a6834570a?w=600&h=600&fit=crop']
+        ['18', 'Garden Hose 30m Heavy', 'GAR-HSE-018', 'Garden', 1250.00, 850.00, 22, 5, 'SafeBuild Inc', 'Anti-kink reinforced garden hose, 30-meter length', '/IMG/PLU/Water Hose.jpg'],
+        ['17', 'Industrial Wheelbarrow', 'GAR-WHL-017', 'Garden', 3800.00, 2900.00, 8, 3, 'PowerTools Depot', 'Deep-dish steel wheelbarrow with pneumatic tire', '/IMG/CONS/Wheelbarrow.jpg']
     ];
 
     $prodSql = "INSERT INTO products 

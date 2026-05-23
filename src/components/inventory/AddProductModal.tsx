@@ -80,8 +80,9 @@ export default function AddProductModal({ open, onClose }: AddProductModalProps)
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-start justify-center z-50 p-5 overflow-y-auto animate-fade-in text-slate-800">
-      <div className="w-full max-w-2xl bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden my-auto">
+    <>
+      <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 animate-fade-in" onClick={onClose} />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden animate-fade-in text-slate-800 max-h-[90vh] flex flex-col">
         {/* Header Area */}
         <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-5">
@@ -164,6 +165,6 @@ export default function AddProductModal({ open, onClose }: AddProductModalProps)
           </div>
         </form>
       </div>
-    </div>
+    </>
   );
 }
