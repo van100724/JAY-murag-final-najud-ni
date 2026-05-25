@@ -1,32 +1,203 @@
-import { Search, Bell } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Search, Bell, X, Package, CalendarClock, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../contexts/AppContext';
 
 export default function Topbar() {
   const navigate = useNavigate();
-  const { getLowStock, getInventoryAlerts } = useApp();
+  const { getLowStock, getInventoryAlerts, products, sales } = useApp();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showResults, setShowResults] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
   const totalNotifications = getLowStock().length + getInventoryAlerts().length;
 
+  // Filter products and sales based on searchQuery
+  const filteredProducts = searchQuery.trim().length >= 2 
+    ? products.filter(p => 
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.category && p.category.toLowerCase().includes(searchQuery.toLowerCase()))
+      ).slice(0, 5) 
+    : [];
+
+  const filteredSales = searchQuery.trim().length >= 2 
+    ? sales.filter(s => 
+        s.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (s.customerName || '').toLowerCase().includes(searchQuery.toLowerCase())
+      ).slice(0, 5) 
+    : [];
+
+  const hasResults = filteredProducts.length > 0 || filteredSales.length > 0;
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowResults(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleProductClick = (sku: string) => {
+    setShowResults(false);
+    setSearchQuery('');
+    navigate(`/inventory?search=${encodeURIComponent(sku)}`);
+  };
+
+  const handleSaleClick = (id: string) => {
+    setShowResults(false);
+    setSearchQuery('');
+    navigate(`/sales?search=${encodeURIComponent(id)}`);
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    
+    setShowResults(false);
+    // If it looks like an order, go to sales, otherwise inventory
+    if (searchQuery.toLowerCase().startsWith('ord-') || sales.some(s => s.id.toLowerCase().includes(searchQuery.toLowerCase()))) {
+      navigate(`/sales?search=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      navigate(`/inventory?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
   return (
-    <header className="h-20 border-b border-white/5 bg-[#f8fafc] px-6 flex items-center justify-between text-slate-800">
+    <header className="h-20 border-b border-white/5 bg-[#f8fafc] px-6 flex items-center justify-between text-slate-800 relative z-50">
       <div className="flex items-center gap-2">
         <h1 className="text-3xl font-black tracking-tighter text-[#92400e]">
           J&JAY
         </h1>
       </div>
 
-      <div className="flex-1 max-w-2xl mx-12">
-        <div className="relative group">
+      {/* Global Search Bar */}
+      <div ref={dropdownRef} className="flex-1 max-w-2xl mx-12 relative">
+        <form onSubmit={handleSearchSubmit} className="relative group">
           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#92400e] transition-colors">
             <Search size={18} />
           </div>
           <input
             type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowResults(true);
+            }}
+            onFocus={() => setShowResults(true)}
             placeholder="Search SKU, Serial, or Order..."
-            className="w-full bg-slate-100 border border-slate-200 rounded-full py-2.5 pl-12 pr-4 outline-none focus:bg-white focus:border-[#92400e]/30 focus:ring-4 focus:ring-[#92400e]/5 transition-all text-sm text-slate-700"
+            className="w-full bg-slate-100 border border-slate-200 rounded-full py-2.5 pl-12 pr-10 outline-none focus:bg-white focus:border-[#92400e]/30 focus:ring-4 focus:ring-[#92400e]/5 transition-all text-sm text-slate-700"
           />
-        </div>
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setShowResults(false);
+              }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </form>
+
+        {/* Autocomplete Dropdown */}
+        {showResults && searchQuery.trim().length >= 2 && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-slate-200 shadow-[0_30px_80px_rgba(15,23,42,0.18)] overflow-hidden z-50 animate-fade-in text-slate-800 flex flex-col max-h-[420px]">
+            <div className="p-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
+              <span>Quick Matches</span>
+              <span>Press enter to search</span>
+            </div>
+
+            <div className="overflow-y-auto p-2 space-y-4 custom-scrollbar">
+              {/* Products Section */}
+              {filteredProducts.length > 0 && (
+                <div className="space-y-1">
+                  <div className="px-3 py-1 flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-widest text-slate-400">
+                    <Package size={12} className="text-[#92400e]" />
+                    Products
+                  </div>
+                  {filteredProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      onClick={() => handleProductClick(product.sku)}
+                      className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-50 cursor-pointer transition-all group"
+                    >
+                      <div>
+                        <p className="font-bold text-xs text-slate-700 group-hover:text-[#92400e] transition-colors">
+                          {product.name}
+                        </p>
+                        <p className="text-[9px] text-slate-400 font-mono mt-0.5">
+                          SKU: {product.sku} • {product.category}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${
+                          product.quantity === 0 
+                            ? 'bg-red-50 text-red-600 border border-red-100' 
+                            : product.quantity <= product.reorderLevel 
+                              ? 'bg-orange-50 text-orange-600 border border-orange-100' 
+                              : 'bg-green-50 text-green-600 border border-green-100'
+                        }`}>
+                          {product.quantity} Units
+                        </span>
+                        <ArrowRight size={12} className="text-slate-300 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Orders Section */}
+              {filteredSales.length > 0 && (
+                <div className="space-y-1">
+                  <div className="px-3 py-1 flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-widest text-slate-400">
+                    <CalendarClock size={12} className="text-blue-600" />
+                    Orders / Sales
+                  </div>
+                  {filteredSales.map((sale) => (
+                    <div
+                      key={sale.id}
+                      onClick={() => handleSaleClick(sale.id)}
+                      className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-50 cursor-pointer transition-all group"
+                    >
+                      <div>
+                        <p className="font-bold text-xs text-slate-700 group-hover:text-blue-600 transition-colors">
+                          Order #{sale.id}
+                        </p>
+                        <p className="text-[9px] text-slate-400 mt-0.5">
+                          Cust: {sale.customerName || 'Walk-in'} • Total: ₱{sale.total.toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${
+                          sale.status === 'cancelled' 
+                            ? 'bg-red-50 text-red-600 border border-red-100' 
+                            : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                        }`}>
+                          {sale.status}
+                        </span>
+                        <ArrowRight size={12} className="text-slate-300 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* No Results */}
+              {!hasResults && (
+                <div className="p-8 text-center text-slate-400">
+                  <p className="text-xs font-bold">No exact matches found</p>
+                  <p className="text-[10px] mt-0.5">Double check SKU spelling or order ID.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-6">

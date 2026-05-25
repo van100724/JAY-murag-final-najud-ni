@@ -1,5 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
+import ReceiptComponent from '../components/pos/Reciept';
 import {
   Search,
   Calendar,
@@ -20,6 +22,7 @@ import {
   Clock,
   User,
   Package,
+  AlertTriangle,
 } from 'lucide-react';
 
 type PaymentFilter = 'all' | 'cash' | 'card' | 'check' | 'online';
@@ -27,8 +30,18 @@ type StatusFilter = 'all' | 'completed' | 'cancelled';
 
 export default function SalesHistory() {
   const { sales, cancelExistingSale } = useApp();
+  const [searchParams] = useSearchParams();
 
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Sync search input with search query parameter from Topbar
+  useEffect(() => {
+    const query = searchParams.get('search');
+    if (query !== null) {
+      setSearchQuery(query);
+    }
+  }, [searchParams]);
+
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [dateRange, setDateRange] = useState({
@@ -38,6 +51,7 @@ export default function SalesHistory() {
   const [selectedSale, setSelectedSale] = useState<any | null>(null);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [saleToVoid, setSaleToVoid] = useState<any | null>(null);
 
   // Filter and search logic
   const filteredSales = useMemo(() => {
@@ -86,16 +100,12 @@ export default function SalesHistory() {
     return { totalRevenue, totalTransactions, avgTicket, cancelledCount };
   }, [filteredSales]);
 
-  const handleCancelSale = async (saleId: string) => {
-    if (
-      window.confirm(
-        'Are you sure you want to void this transaction? Product stock will be restored automatically.'
-      )
-    ) {
-      setCancellingId(saleId);
-      await cancelExistingSale(saleId);
-      setCancellingId(null);
-    }
+  const handleVoidConfirm = async () => {
+    if (!saleToVoid) return;
+    setCancellingId(saleToVoid.id);
+    await cancelExistingSale(saleToVoid.id);
+    setCancellingId(null);
+    setSaleToVoid(null);
   };
 
   const paymentIcon = (method: string) => {
@@ -138,7 +148,8 @@ export default function SalesHistory() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in h-full overflow-y-auto pr-2 custom-scrollbar text-slate-800 pb-10">
+    <>
+      <div className="space-y-6 animate-fade-in h-full overflow-y-auto pr-2 custom-scrollbar text-slate-800 pb-10">
       {/* Page Header */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
@@ -285,15 +296,13 @@ export default function SalesHistory() {
               ) : (
                 filteredSales.map((sale) => {
                   const isExpanded = expandedRow === sale.id;
-                  const isCancelling = cancellingId === sale.id;
                   const saleDate = new Date(sale.saleDate);
 
                   return (
                     <tr
                       key={sale.id}
-                      className={`hover:bg-slate-50/60 transition-colors cursor-pointer ${
-                        sale.status === 'cancelled' ? 'opacity-60' : ''
-                      }`}
+                      className={`hover:bg-slate-50/60 transition-colors cursor-pointer ${sale.status === 'cancelled' ? 'opacity-60' : ''
+                        }`}
                       onClick={() => setExpandedRow(isExpanded ? null : sale.id)}
                     >
                       <td className="px-6 py-4">
@@ -359,13 +368,12 @@ export default function SalesHistory() {
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                            sale.status === 'completed'
+                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${sale.status === 'completed'
                               ? 'bg-emerald-100 text-emerald-700'
                               : sale.status === 'cancelled'
-                              ? 'bg-red-100 text-red-600'
-                              : 'bg-amber-100 text-amber-700'
-                          }`}
+                                ? 'bg-red-100 text-red-600'
+                                : 'bg-amber-100 text-amber-700'
+                            }`}
                         >
                           {sale.status}
                         </span>
@@ -381,12 +389,12 @@ export default function SalesHistory() {
                           </button>
                           {sale.status === 'completed' && (
                             <button
-                              onClick={() => handleCancelSale(sale.id)}
-                              disabled={isCancelling}
+                              onClick={() => setSaleToVoid(sale)}
+                              disabled={cancellingId !== null}
                               className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center text-red-500 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                               title="Void Transaction"
                             >
-                              {isCancelling ? (
+                              {cancellingId === sale.id ? (
                                 <div className="w-3.5 h-3.5 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
                               ) : (
                                 <Ban size={14} />
@@ -443,168 +451,104 @@ export default function SalesHistory() {
           </div>
         )}
       </div>
+    </div>
 
       {/* Receipt Modal */}
       {selectedSale && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
-          onClick={() => setSelectedSale(null)}
-        >
-          <div
-            className="bg-white rounded-3xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto border border-slate-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Receipt Header */}
-            <div className="bg-gradient-to-br from-[#1a202c] to-[#2d3748] text-white p-8 rounded-t-3xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-[#c2410c]/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#c2410c] flex items-center justify-center">
-                      <Receipt size={20} />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-black tracking-tight">Transaction Receipt</h3>
-                      <p className="text-[10px] text-white/50 font-bold uppercase tracking-widest">
-                        J&JAY Hardware — Balingasag
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setSelectedSale(null)}
-                    className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-xs">
-                  <div>
-                    <p className="text-white/40 font-bold uppercase text-[9px] tracking-widest">Order ID</p>
-                    <p className="font-black">{selectedSale.id}</p>
-                  </div>
-                  <div>
-                    <p className="text-white/40 font-bold uppercase text-[9px] tracking-widest">Date</p>
-                    <p className="font-bold">
-                      {new Date(selectedSale.saleDate).toLocaleDateString('en-US', {
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-white/40 font-bold uppercase text-[9px] tracking-widest">Cashier</p>
-                    <p className="font-bold">{selectedSale.cashier || 'Unknown'}</p>
-                  </div>
-                  <div>
-                    <p className="text-white/40 font-bold uppercase text-[9px] tracking-widest">Customer</p>
-                    <p className="font-bold">{selectedSale.customerName || 'Walk-in'}</p>
-                  </div>
-                </div>
+        <ReceiptComponent
+          sale={{
+            id: selectedSale.id,
+            customer_name: selectedSale.customerName || selectedSale.customer_name || 'Walk-in',
+            total: Number(selectedSale.total),
+            tax: Number(selectedSale.tax || 0),
+            discount: Number(selectedSale.discount || 0),
+            payment_method: selectedSale.paymentMethod || selectedSale.payment_method || 'cash',
+            amount_paid: Number(selectedSale.amountPaid || selectedSale.amount_paid || selectedSale.total),
+            change_amount: Number(selectedSale.change !== undefined ? selectedSale.change : (selectedSale.change_amount || 0)),
+            cashier: selectedSale.cashier || 'Unknown',
+            notes: selectedSale.notes || '',
+            saleDate: selectedSale.saleDate,
+            status: selectedSale.status,
+            items: selectedSale.items.map((item: any) => ({
+              productId: item.productId || item.product_id,
+              productName: item.productName || item.product_name,
+              quantity: Number(item.quantity),
+              unitPrice: Number(item.unitPrice || item.price || 0),
+              total: Number(item.total || (item.quantity * (item.unitPrice || item.price || 0)))
+            }))
+          }}
+          onClose={() => setSelectedSale(null)}
+        />
+      )}
+
+      {/* Void Confirmation Modal */}
+      {saleToVoid && (
+        <>
+          <div className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm animate-fade-in" onClick={() => setSaleToVoid(null)} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-md bg-white rounded-[35px] p-6 border border-slate-200 shadow-[0_30px_80px_rgba(15,23,42,0.18)] overflow-hidden animate-fade-in text-center text-slate-800">
+
+            {/* Warning Icon Container */}
+            <div className="mx-auto w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-4 border border-red-100 shadow-sm">
+              <AlertTriangle size={32} className="animate-bounce" />
+            </div>
+
+            {/* Title */}
+            <h3 className="text-xl font-black text-slate-900 tracking-tight">Void Transaction?</h3>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">This action cannot be undone</p>
+
+            {/* Brief details card */}
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 my-6 text-left space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-400 font-bold uppercase">Order ID</span>
+                <span className="font-mono font-bold text-slate-900">{saleToVoid.id}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400 font-bold uppercase">Customer</span>
+                <span className="font-bold text-slate-950">{saleToVoid.customerName || 'Walk-in'}</span>
+              </div>
+              <div className="flex justify-between border-b border-dashed border-slate-200 pb-2">
+                <span className="text-slate-400 font-bold uppercase">Items count</span>
+                <span className="font-bold text-slate-800">{saleToVoid.items.length} item(s)</span>
+              </div>
+              <div className="flex justify-between pt-1">
+                <span className="text-slate-500 font-black uppercase text-[10px]">Total Amount</span>
+                <span className="font-black text-red-600 text-sm">₱{Number(saleToVoid.total).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
 
-            {/* Items List */}
-            <div className="p-6 space-y-3">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Items Purchased</p>
-              <div className="space-y-2">
-                {selectedSale.items.map((item: any, idx: number) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0"
-                  >
-                    <div className="flex-1">
-                      <p className="font-bold text-xs text-slate-800">{item.productName}</p>
-                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                        {item.quantity} × ₱{(item.unitPrice || item.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </p>
-                    </div>
-                    <p className="font-black text-sm text-slate-900">
-                      ₱{(item.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Helper message */}
+            <p className="text-slate-500 text-xs font-medium px-2 leading-relaxed">
+              Voiding this transaction will restore the stock levels for all purchased products and mark the ledger entry as cancelled.
+            </p>
 
-            {/* Totals */}
-            <div className="mx-6 p-5 bg-slate-50 rounded-2xl border border-slate-100 space-y-3 mb-6">
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-500 font-bold">Subtotal</span>
-                <span className="font-bold text-slate-700">
-                  ₱{(selectedSale.subtotal || selectedSale.total).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              {selectedSale.discount > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-red-500 font-bold">Discount</span>
-                  <span className="font-bold text-red-500">
-                    -₱{selectedSale.discount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-              )}
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-500 font-bold">Tax (12% VAT)</span>
-                <span className="font-bold text-slate-700">
-                  ₱{(selectedSale.tax || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div className="border-t border-slate-200 pt-3 flex justify-between">
-                <span className="text-sm font-black text-slate-900">Total</span>
-                <span className="text-lg font-black text-[#c2410c]">
-                  ₱{selectedSale.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div className="border-t border-dashed border-slate-200 pt-3 space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-500 font-bold">Amount Paid</span>
-                  <span className="font-bold text-slate-700">
-                    ₱{(selectedSale.amountPaid || selectedSale.total).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-500 font-bold">Change</span>
-                  <span className="font-bold text-emerald-600">
-                    ₱{(selectedSale.change || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="px-6 pb-6 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${paymentColor(
-                    selectedSale.paymentMethod
-                  )}`}
-                >
-                  {paymentIcon(selectedSale.paymentMethod)}
-                  {selectedSale.paymentMethod}
-                </span>
-                <span
-                  className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                    selectedSale.status === 'completed'
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : selectedSale.status === 'cancelled'
-                      ? 'bg-red-100 text-red-600'
-                      : 'bg-amber-100 text-amber-700'
-                  }`}
-                >
-                  {selectedSale.status}
-                </span>
-              </div>
+            {/* Action buttons */}
+            <div className="flex gap-3 mt-8">
               <button
-                onClick={() => setSelectedSale(null)}
-                className="px-5 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                onClick={() => setSaleToVoid(null)}
+                disabled={cancellingId !== null}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all py-3.5 rounded-xl font-black text-xs uppercase tracking-widest disabled:opacity-50"
               >
-                Close
+                Keep Order
+              </button>
+
+              <button
+                onClick={handleVoidConfirm}
+                disabled={cancellingId !== null}
+                className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/10 transition-all py-3.5 rounded-xl font-black text-xs uppercase tracking-widest active:scale-[0.98] disabled:opacity-50"
+              >
+                {cancellingId !== null ? (
+                  <div className="w-4 h-4 border-2 border-red-200 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Ban size={14} />
+                )}
+                {cancellingId !== null ? 'Voiding...' : 'Yes, Void'}
               </button>
             </div>
+
           </div>
-        </div>
+        </>
       )}
-    </div>
+    </>
   );
 }
 

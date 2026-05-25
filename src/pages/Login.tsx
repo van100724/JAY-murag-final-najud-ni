@@ -7,7 +7,7 @@ export default function Login() {
       {/* Login Card Container */}
       <div className="relative z-10 w-full max-w-[440px] px-6 animate-fade-in">
         <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-10">
-          
+
           {/* Logo Area */}
           <div className="text-center mb-10">
             <div className="flex items-center justify-center gap-3 mb-2">
@@ -19,7 +19,7 @@ export default function Login() {
               </h1>
             </div>
             <div className="mt-8 flex flex-col items-center gap-2">
-              <h2 className="text-xl font-bold text-slate-800">Secure Operator Entry</h2>
+              <h2 className="text-xl font-bold text-slate-800"> System Authentication</h2>
               <div className="h-1 w-12 bg-[#c2410c] rounded-full" />
             </div>
           </div>
@@ -29,11 +29,11 @@ export default function Login() {
             <LoginForm />
           </div>
         </div>
-        
+
         {/* External Branding */}
         <div className="mt-8 flex flex-col items-center gap-4">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-            Licensed Terminal ID: JAY-BAL-012
+            J&JAY
           </p>
           <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
             © 2026 J&JAY Systems

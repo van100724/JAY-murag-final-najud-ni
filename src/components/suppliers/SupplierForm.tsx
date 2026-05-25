@@ -1,33 +1,61 @@
 // src/components/suppliers/SupplierForm.tsx
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Truck, ArrowRight } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
 interface SupplierFormProps {
   open: boolean;
   onClose: () => void;
+  supplier?: any;
 }
 
-export default function SupplierForm({ open, onClose }: SupplierFormProps) {
-  const { addNewSupplier } = useApp();
+const defaultForm = {
+  name: '',
+  contactPerson: '',
+  email: '',
+  phone: '',
+  address: '',
+  city: 'Quezon City',
+  state: 'Metro Manila',
+  zipCode: '',
+  country: 'Philippines',
+  paymentTerms: 'Net30' as 'COD' | 'Net30' | 'Net60' | 'Net90',
+  status: 'active' as 'active' | 'inactive' | 'blocked',
+  category: '',
+  rating: 3,
+  averageDeliveryTime: 1,
+};
 
-  const [formData, setFormData] = useState({
-    name: '',
-    contactPerson: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: 'Quezon City',
-    state: 'Metro Manila',
-    zipCode: '',
-    country: 'Philippines',
-    paymentTerms: 'Net30' as 'COD' | 'Net30' | 'Net60' | 'Net90',
-    status: 'active' as 'active' | 'inactive' | 'blocked',
-    category: '',
-    rating: 3,
-    averageDeliveryTime: 1,
-  });
+export default function SupplierForm({ open, onClose, supplier }: SupplierFormProps) {
+  const { addNewSupplier, updateExistingSupplier } = useApp();
+
+  const [formData, setFormData] = useState(defaultForm);
+
+  useEffect(() => {
+    if (open) {
+      if (supplier) {
+        setFormData({
+          name: supplier.name || '',
+          contactPerson: supplier.contactPerson || '',
+          email: supplier.email || '',
+          phone: supplier.phone || '',
+          address: supplier.address || '',
+          city: supplier.city || 'Quezon City',
+          state: supplier.state || 'Metro Manila',
+          zipCode: supplier.zipCode || '',
+          country: supplier.country || 'Philippines',
+          paymentTerms: supplier.paymentTerms || 'Net30',
+          status: supplier.status || 'active',
+          category: supplier.category || '',
+          rating: supplier.rating ?? 3,
+          averageDeliveryTime: supplier.averageDeliveryTime ?? 1,
+        });
+      } else {
+        setFormData(defaultForm);
+      }
+    }
+  }, [open, supplier]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -42,27 +70,18 @@ export default function SupplierForm({ open, onClose }: SupplierFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await addNewSupplier(formData as any);
-    setFormData({
-      name: '',
-      contactPerson: '',
-      email: '',
-      phone: '',
-      address: '',
-      city: 'Quezon City',
-      state: 'Metro Manila',
-      zipCode: '',
-      country: 'Philippines',
-      paymentTerms: 'Net30',
-      status: 'active',
-      category: '',
-      rating: 3,
-      averageDeliveryTime: 1,
-    });
+    if (supplier && supplier.id) {
+      await updateExistingSupplier(supplier.id, formData);
+    } else {
+      await addNewSupplier(formData as any);
+    }
+    setFormData(defaultForm);
     onClose();
   };
 
   if (!open) return null;
+
+  const isEditing = !!supplier;
 
   return (
     <>
@@ -77,16 +96,17 @@ export default function SupplierForm({ open, onClose }: SupplierFormProps) {
 
             <div>
               <h2 className="text-2xl font-black tracking-tight text-slate-900 leading-none">
-                Add Supplier
+                {isEditing ? 'Edit Supplier' : 'Add Supplier'}
               </h2>
 
               <p className="mt-1 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
-                Register new partner into system
+                {isEditing ? 'Update partner details in the system' : 'Register new partner into system'}
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={onClose}
             className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400 transition-all hover:text-slate-700"
           >
@@ -274,7 +294,7 @@ export default function SupplierForm({ open, onClose }: SupplierFormProps) {
               type="submit"
               className="flex items-center gap-2 rounded-xl bg-[#c2410c] px-7 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-orange-900/20 transition-all hover:bg-[#9a3412] hover:-translate-y-0.5"
             >
-              Add Supplier
+              {isEditing ? 'Save Changes' : 'Add Supplier'}
               <ArrowRight size={14} />
             </button>
           </div>

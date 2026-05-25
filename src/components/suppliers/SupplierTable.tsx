@@ -11,7 +11,11 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
-export default function SupplierTable() {
+interface SupplierTableProps {
+  onEdit: (supplier: any) => void;
+}
+
+export default function SupplierTable({ onEdit }: SupplierTableProps) {
   const { suppliers, deleteExistingSupplier } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -141,7 +145,10 @@ export default function SupplierTable() {
 
                 <td className="px-8 py-6 text-right">
                   <div className="flex justify-end gap-2">
-                    <button className="p-2.5 rounded-xl text-slate-300 hover:text-slate-600 hover:bg-slate-100 transition-all">
+                    <button 
+                      onClick={() => onEdit(supplier)}
+                      className="p-2.5 rounded-xl text-slate-300 hover:text-slate-600 hover:bg-slate-100 transition-all"
+                    >
                       <Pencil size={18} />
                     </button>
                     <button

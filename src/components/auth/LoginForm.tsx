@@ -112,7 +112,7 @@ export default function LoginForm() {
             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
             <>
-              Authenticate Session <ArrowRight size={18} />
+              Login <ArrowRight size={18} />
             </>
           )}
         </span>
@@ -120,7 +120,7 @@ export default function LoginForm() {
 
       <div className="text-center">
         <button type="button" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors">
-          Forgot Security Pin?
+
         </button>
       </div>
     </form>

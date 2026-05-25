@@ -5,6 +5,17 @@ import { UserPlus } from 'lucide-react';
 
 export default function Suppliers() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedSupplier, setSelectedSupplier] = useState<any | null>(null);
+
+  const handleEdit = (supplier: any) => {
+    setSelectedSupplier(supplier);
+    setIsModalOpen(true);
+  };
+
+  const handleClose = () => {
+    setIsModalOpen(false);
+    setSelectedSupplier(null);
+  };
 
   return (
     <>
@@ -20,7 +31,10 @@ export default function Suppliers() {
           </div>
 
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setSelectedSupplier(null);
+              setIsModalOpen(true);
+            }}
             className="flex items-center gap-2 bg-[#c2410c] text-white px-6 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-orange-900/20 hover:bg-[#9a3412] transition-all active:scale-[0.98]"
           >
             <UserPlus size={16} />
@@ -28,12 +42,13 @@ export default function Suppliers() {
           </button>
         </div>
 
-        <SupplierTable />
+        <SupplierTable onEdit={handleEdit} />
       </div>
 
       <SupplierForm
         open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleClose}
+        supplier={selectedSupplier}
       />
     </>
   );

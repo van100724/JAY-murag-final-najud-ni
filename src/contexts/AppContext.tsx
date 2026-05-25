@@ -15,8 +15,6 @@ import {
   getDailyReport, 
   getSalesReport, 
   getTopSellingProducts,
-  getAllSales,
-  cancelSale
 } from '../data/sales';
 import type { Sale } from '../data/sales';
 import { 
@@ -348,13 +346,20 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   // Supplier functions
   const addNewSupplier = async (supplierData: Omit<Supplier, 'id' | 'createdAt'>) => {
+    const id = `SUP-${Date.now()}`;
+    const newSupplier = {
+      ...supplierData,
+      id,
+      createdAt: new Date(),
+      products: [],
+    };
     try {
-      const id = `SUP-${Date.now()}`;
-      await api.addSupplier({ ...supplierData, id });
+      await api.addSupplier(newSupplier);
       const updatedSuppliers = await api.getSuppliers();
       setSuppliers(updatedSuppliers);
     } catch (err) {
-      console.error('Failed to add supplier:', err);
+      console.warn('Failed to add supplier to database, using offline fallback:', err);
+      setSuppliers(prev => [...prev, newSupplier]);
     }
   };
 
@@ -364,7 +369,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       const updatedSuppliers = await api.getSuppliers();
       setSuppliers(updatedSuppliers);
     } catch (err) {
-      console.error('Failed to update supplier:', err);
+      console.warn('Failed to update supplier in database, using offline fallback:', err);
+      setSuppliers(prev => prev.map(sup => sup.id === id ? { ...sup, ...updates } : sup));
     }
   };
 
@@ -374,7 +380,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       const updatedSuppliers = await api.getSuppliers();
       setSuppliers(updatedSuppliers);
     } catch (err) {
-      console.error('Failed to delete supplier:', err);
+      console.warn('Failed to delete supplier from database, using offline fallback:', err);
+      setSuppliers(prev => prev.filter(sup => sup.id !== id));
     }
   };
 

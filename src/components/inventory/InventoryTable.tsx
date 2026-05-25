@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Pencil, Trash2, Search } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
@@ -8,8 +9,17 @@ interface InventoryTableProps {
 
 export default function InventoryTable({ onEdit }: InventoryTableProps) {
   const { products, deleteExistingProduct } = useApp();
+  const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Items');
+
+  // Sync search input with search query parameter from Topbar
+  useEffect(() => {
+    const query = searchParams.get('search');
+    if (query !== null) {
+      setSearchTerm(query);
+    }
+  }, [searchParams]);
 
   const categories = ['All Items', 'Power Tools', 'Fasteners', 'Plumbing', 'Electrical', 'Painting'];
 
