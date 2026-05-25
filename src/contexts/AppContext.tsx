@@ -332,7 +332,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       await api.cancelSale(saleId);
       await refreshAllData();
     } catch (err) {
-      console.error('Failed to cancel sale:', err);
+      console.warn('Failed to cancel sale in database, using offline fallback:', err);
+      setSales(prev => prev.map(sale => sale.id === saleId ? { ...sale, status: 'cancelled' } : sale));
     }
   };
 

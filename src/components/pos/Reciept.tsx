@@ -29,57 +29,90 @@ interface ReceiptProps {
 
 export default function Receipt({ sale, onClose }: ReceiptProps) {
   const handlePrint = () => {
-    // Save current document title
-    const originalTitle = document.title;
-    document.title = `Receipt-${sale.id}`;
+    const printWindow = window.open('', '_blank', 'width=500,height=850');
+    if (!printWindow) {
+      alert('Please allow popups to print your receipt');
+      return;
+    }
 
-    // Create a print container style
-    const style = document.createElement('style');
-    style.innerHTML = `
-      @page {
-        size: portrait;
-        margin: 15mm;
-      }
-      @media print {
-        body {
-          background: white;
-          color: black;
-        }
-        /* Hide all page content by default */
-        body * {
-          visibility: hidden !important;
-        }
-        /* Reveal only the printable receipt and its children */
-        #print-receipt-root,
-        #print-receipt-root * {
-          visibility: visible !important;
-        }
-        /* Position the printable area at top-left of the page */
-        #print-receipt-root {
-          position: absolute !important;
-          left: 0 !important;
-          top: 0 !important;
-          width: 100% !important;
-          padding: 0 !important;
-          margin: 0 !important;
-          background: white !important;
-        }
-        /* Ensure no-print elements remain hidden */
-        .no-print,
-        .no-print * {
-          display: none !important;
-          visibility: hidden !important;
-        }
-      }
-    `;
-    document.head.appendChild(style);
+    const receiptHtml = document.getElementById('print-receipt-root')?.innerHTML || '';
 
-    // Trigger standard print dialog
-    window.print();
-
-    // Cleanup
-    document.head.removeChild(style);
-    document.title = originalTitle;
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Receipt-${sale.id}</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+          <script src="https://cdn.tailwindcss.com"></script>
+          <script>
+            tailwind.config = {
+              theme: {
+                extend: {
+                  fontFamily: {
+                    sans: ['Outfit', 'sans-serif'],
+                  }
+                }
+              }
+            }
+          </script>
+          <style>
+            body {
+              font-family: 'Outfit', sans-serif !important;
+              background-color: #f8fafc !important;
+              padding: 24px !important;
+              margin: 0;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            #print-receipt-root {
+              background-color: #ffffff !important;
+              border-radius: 35px !important;
+              border: 1px solid #e2e8f0 !important;
+              box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+              padding: 32px !important;
+              max-width: 440px !important;
+              margin: 0 auto !important;
+            }
+            .no-print {
+              display: none !important;
+            }
+            /* Force exact background color printing in browsers */
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            @media print {
+              body {
+                background-color: #ffffff !important;
+                padding: 0 !important;
+              }
+              #print-receipt-root {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+              }
+            }
+          </style>
+        </head>
+        <body class="bg-slate-50 min-h-screen flex items-center justify-center">
+          <div id="print-receipt-root">
+            ${receiptHtml}
+          </div>
+          <script>
+            window.onload = function() {
+              // Wait slightly for Tailwind and Fonts to finish loading and rendering
+              setTimeout(function() {
+                window.print();
+                setTimeout(function() { window.close(); }, 500);
+              }, 600);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const generateBarcode = (text: string) => {
@@ -95,9 +128,8 @@ export default function Receipt({ sale, onClose }: ReceiptProps) {
             return (
               <div
                 key={i}
-                className={`h-full ${isGap ? 'bg-transparent' : 'bg-slate-900'} ${
-                  isWide ? 'w-[3px]' : 'w-[1px]'
-                }`}
+                className={`h-full ${isGap ? 'bg-transparent' : 'bg-slate-900'} ${isWide ? 'w-[3px]' : 'w-[1px]'
+                  }`}
               />
             );
           })}
@@ -124,10 +156,10 @@ export default function Receipt({ sale, onClose }: ReceiptProps) {
     <>
       <div className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm animate-fade-in" onClick={onClose} />
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-md bg-white rounded-[35px] border border-slate-200 shadow-[0_30px_80px_rgba(15,23,42,0.18)] flex flex-col max-h-[90vh] overflow-hidden animate-fade-in text-slate-800">
-        
+
         {/* Receipt wrapper (Printed area) */}
         <div id="print-receipt-root" className="p-8 bg-white overflow-y-auto flex-1 custom-scrollbar relative">
-          
+
           {/* Watermark stamp for voided receipts */}
           {isCancelled && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden select-none z-0">
@@ -138,16 +170,18 @@ export default function Receipt({ sale, onClose }: ReceiptProps) {
           )}
 
           {/* Header */}
-          <div className="text-center pb-6 border-b border-dashed border-slate-200 z-10 relative">
-            <div className={`mx-auto w-12 h-12 ${isCancelled ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-orange-50 text-[#c2410c]'} rounded-full flex items-center justify-center mb-3`}>
-              {isCancelled ? <Ban size={24} /> : <ReceiptIcon size={24} />}
+          <div className="text-center pb-6 border-b border-dashed border-slate-200 z-10 relative flex flex-col items-center">
+            <div className="w-20 h-20 rounded-2xl overflow-hidden border border-slate-100 shadow-sm flex items-center justify-center mb-3 bg-white">
+              <img src="/J&JAY.jpg" alt="J&JAY Logo" className="w-full h-full object-cover" />
             </div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">J&JAY</h1>
-            <p className={`text-xs ${isCancelled ? 'text-red-600 font-extrabold' : 'text-slate-500 font-bold'} uppercase tracking-wider mt-1`}>
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 leading-none">J&JAY</h1>
+            <p className={`text-xs ${isCancelled ? 'text-red-600 font-extrabold' : 'text-slate-500 font-bold'} uppercase tracking-wider mt-1.5`}>
               {isCancelled ? 'VOIDED TRANSACTION RECEIPT' : 'POS & Inventory System'}
             </p>
-            <p className="text-[10px] text-slate-400 mt-1">123 Hardware Lane, Metro Manila, PH</p>
-            <p className="text-[10px] text-slate-400">Tel: +63 2 8555 9999</p>
+            <p className="text-[10px] text-slate-400 mt-1">
+              National Highway Poblacion 1, Balingasag, Philippines</p>
+            <p className="text-[10px] text-slate-400">Tel:
+              0966 704 3203</p>
           </div>
 
           {/* Success / Voided Status Indicator (Not printed if styled as no-print) */}
@@ -281,14 +315,13 @@ export default function Receipt({ sale, onClose }: ReceiptProps) {
             <Printer size={16} />
             Print Receipt
           </button>
-          
+
           <button
             onClick={onClose}
-            className={`flex-1 flex items-center justify-center gap-2 text-white shadow-lg transition-all py-3.5 rounded-xl font-black text-xs uppercase tracking-widest active:scale-[0.98] ${
-              isCancelled || sale.saleDate
-                ? 'bg-slate-500 hover:bg-slate-600 shadow-slate-900/10'
-                : 'bg-[#c2410c] hover:bg-[#9a3412] shadow-orange-900/10'
-            }`}
+            className={`flex-1 flex items-center justify-center gap-2 text-white shadow-lg transition-all py-3.5 rounded-xl font-black text-xs uppercase tracking-widest active:scale-[0.98] ${isCancelled || sale.saleDate
+              ? 'bg-slate-500 hover:bg-slate-600 shadow-slate-900/10'
+              : 'bg-[#c2410c] hover:bg-[#9a3412] shadow-orange-900/10'
+              }`}
           >
             <RefreshCw size={16} className={isCancelled || sale.saleDate ? 'hidden' : ''} />
             {isCancelled || sale.saleDate ? 'Close Receipt' : 'New Transaction'}
