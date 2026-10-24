@@ -57,6 +57,18 @@ export default function SupplierForm({ open, onClose, supplier }: SupplierFormPr
     }
   }, [open, supplier]);
 
+  // Close on Escape key (Heuristic 3: User control and freedom)
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose]);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
@@ -70,10 +82,20 @@ export default function SupplierForm({ open, onClose, supplier }: SupplierFormPr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const sanitizedData = {
+      ...formData,
+      name: formData.name.trim(),
+      contactPerson: formData.contactPerson.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim(),
+      address: formData.address.trim(),
+      averageDeliveryTime: Math.max(1, Math.floor(Number(formData.averageDeliveryTime) || 1)),
+    };
+
     if (supplier && supplier.id) {
-      await updateExistingSupplier(supplier.id, formData);
+      await updateExistingSupplier(supplier.id, sanitizedData);
     } else {
-      await addNewSupplier(formData as any);
+      await addNewSupplier(sanitizedData as any);
     }
     setFormData(defaultForm);
     onClose();
@@ -288,7 +310,7 @@ export default function SupplierForm({ open, onClose, supplier }: SupplierFormPr
               onClick={onClose}
               className="rounded-xl bg-slate-100 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-all hover:bg-slate-200"
             >
-              Cancel
+              Cancel (Esc)
             </button>
             <button
               type="submit"

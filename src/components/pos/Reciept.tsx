@@ -1,4 +1,4 @@
-import { Printer, RefreshCw, CheckCircle2, User, Calendar, CreditCard, Receipt as ReceiptIcon, Ban } from 'lucide-react';
+import { Printer, RefreshCw, CheckCircle2, User, Calendar, CreditCard, Ban } from 'lucide-react';
 
 interface ReceiptItem {
   productId: string;

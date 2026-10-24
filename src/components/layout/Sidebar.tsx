@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -8,11 +9,13 @@ import {
   Bell,
   LogOut,
   RefreshCcw,
-  CalendarClock
+  CalendarClock,
+  UserCheck
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useNavigate } from 'react-router-dom';
 import logoImg from '../../assets/logo.jpg';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 const allLinks = [
   { label: 'Dashboard', path: '/', icon: LayoutDashboard, roles: ['admin'] },
@@ -25,11 +28,24 @@ const allLinks = [
 ];
 
 export default function Sidebar() {
-  const { user, logout } = useApp();
+  const { user, logout, showToast } = useApp();
   const navigate = useNavigate();
+  const [showSyncConfirm, setShowSyncConfirm] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Filter links based on user role
   const links = allLinks.filter(link => link.roles.includes(user?.role || ''));
+
+  const handleSyncConfirm = () => {
+    localStorage.clear();
+    showToast('Terminal cache cleared. Redirecting to login...', 'info');
+    window.location.href = '/login';
+  };
+
+  const handleLogoutConfirm = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <aside className="w-72 bg-[#1a202c] flex flex-col h-screen sticky top-0 z-20">
@@ -75,33 +91,61 @@ export default function Sidebar() {
       </nav>
 
       {/* Sidebar Footer */}
-      <div className="p-6 border-t border-white/5 bg-[#1a1a2e]/30 space-y-4">
-
+      <div className="p-4 border-t border-white/5 bg-[#1a1a2e]/30 space-y-2">
+        {/* User Card */}
+        {user && (
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/5 border border-white/5 text-xs text-slate-300">
+            <div className="w-8 h-8 rounded-lg bg-orange-600/20 text-[#c2410c] flex items-center justify-center font-black">
+              <UserCheck size={16} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-bold text-white truncate text-xs">{user.name}</p>
+              <p className="text-[10px] text-slate-400 capitalize font-medium">{user.role} Account</p>
+            </div>
+          </div>
+        )}
 
         <button
-          onClick={() => {
-            if (window.confirm('CRITICAL: Sync terminal with central warehouse? All local data will be wiped.')) {
-              localStorage.clear();
-              window.location.href = '/login';
-            }
-          }}
-          className="flex items-center gap-4 w-full px-5 py-4 rounded-2xl text-gray-500 hover:text-white hover:bg-white/5 transition-all group"
+          type="button"
+          onClick={() => setShowSyncConfirm(true)}
+          className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all text-xs font-semibold group"
+          title="Reset local cache to fresh demo/database state"
         >
-          <RefreshCcw size={20} className="group-hover:rotate-180 transition-transform duration-500" />
-          <span className="font-bold text-sm">Sync Warehouse</span>
+          <RefreshCcw size={16} className="group-hover:rotate-180 transition-transform duration-500" />
+          <span>Reset Terminal Cache</span>
         </button>
 
         <button
-          onClick={() => {
-            logout();
-            navigate('/login');
-          }}
-          className="flex items-center gap-4 w-full px-5 py-4 rounded-2xl text-gray-500 hover:text-white hover:bg-white/5 transition-all group"
+          type="button"
+          onClick={() => setShowLogoutConfirm(true)}
+          className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all text-xs font-semibold group"
         >
-          <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />
-          <span className="font-bold text-sm">Logout</span>
+          <LogOut size={16} className="group-hover:-translate-x-1 transition-transform" />
+          <span>Logout</span>
         </button>
       </div>
+
+      {/* Confirmation Dialogs - Heuristics 3 & 5 */}
+      <ConfirmDialog
+        open={showSyncConfirm}
+        title="Reset Local Terminal Cache?"
+        message="This will clear your local offline browser storage and reload default system state. Are you sure you want to continue?"
+        confirmText="Reset Cache"
+        cancelText="Cancel"
+        isDestructive={true}
+        onConfirm={handleSyncConfirm}
+        onCancel={() => setShowSyncConfirm(false)}
+      />
+
+      <ConfirmDialog
+        open={showLogoutConfirm}
+        title="Sign Out of Session?"
+        message="Are you sure you want to end your current session and return to the login screen?"
+        confirmText="Sign Out"
+        cancelText="Stay Logged In"
+        onConfirm={handleLogoutConfirm}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
     </aside>
   );
 }

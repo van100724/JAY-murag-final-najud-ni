@@ -74,9 +74,11 @@ export default function Inventory() {
               <Package size={24} />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Warehouse Status</p>
-              <p className="text-2xl font-black text-slate-800">Operational</p>
-              <p className="text-[10px] text-blue-600 font-bold mt-0.5">All zones synced</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Catalog</p>
+              <p className="text-2xl font-black text-slate-800">{products.length} Products</p>
+              <p className="text-[10px] text-blue-600 font-bold mt-0.5">
+                {products.filter(p => p.quantity === 0).length} Out of Stock
+              </p>
             </div>
           </div>
         </div>
