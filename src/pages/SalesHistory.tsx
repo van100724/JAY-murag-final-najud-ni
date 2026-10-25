@@ -53,6 +53,18 @@ export default function SalesHistory() {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [saleToVoid, setSaleToVoid] = useState<any | null>(null);
 
+  // Usability Heuristic: User Control & Freedom (Esc closes modal)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (saleToVoid) setSaleToVoid(null);
+        if (selectedSale) setSelectedSale(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [saleToVoid, selectedSale]);
+
   // Filter and search logic
   const filteredSales = useMemo(() => {
     return sales.filter((sale) => {
@@ -151,14 +163,20 @@ export default function SalesHistory() {
     <>
       <div className="space-y-6 animate-fade-in h-full overflow-y-auto pr-2 custom-scrollbar text-slate-800 pb-10">
       {/* Page Header */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">Sales History</h1>
-          <p className="text-slate-500 mt-1 font-medium text-sm">
+          <div className="flex items-center gap-3 mb-1">
+            <h1 className="text-3xl font-black tracking-tight text-slate-900">Sales History</h1>
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-orange-50 text-[#c2410c] border border-orange-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#c2410c] animate-pulse" />
+              {sales.length} Synced Records
+            </span>
+          </div>
+          <p className="text-slate-500 font-medium text-sm">
             Complete transaction ledger with search, filtering, and void capabilities.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+        <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white border border-slate-200/80 px-3.5 py-2 rounded-xl shadow-2xs">
           <Clock size={14} className="text-[#c2410c]" />
           Showing {filteredSales.length} of {sales.length} transactions
         </div>
@@ -484,8 +502,8 @@ export default function SalesHistory() {
       {/* Void Confirmation Modal */}
       {saleToVoid && (
         <>
-          <div className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm animate-fade-in" onClick={() => setSaleToVoid(null)} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-md bg-white rounded-[35px] p-6 border border-slate-200 shadow-[0_30px_80px_rgba(15,23,42,0.18)] overflow-hidden animate-fade-in text-center text-slate-800">
+          <div className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-md animate-fade-in" onClick={() => setSaleToVoid(null)} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-md bg-white rounded-3xl p-6 border border-slate-200/80 shadow-2xl overflow-hidden animate-fade-in text-center text-slate-800">
 
             {/* Warning Icon Container */}
             <div className="mx-auto w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-4 border border-red-100 shadow-sm">

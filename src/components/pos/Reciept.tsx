@@ -1,4 +1,5 @@
-import { Printer, RefreshCw, CheckCircle2, User, Calendar, CreditCard, Receipt as ReceiptIcon, Ban } from 'lucide-react';
+import { useEffect } from 'react';
+import { Printer, RefreshCw, CheckCircle2, User, Calendar, CreditCard, Ban } from 'lucide-react';
 
 interface ReceiptItem {
   productId: string;
@@ -28,6 +29,16 @@ interface ReceiptProps {
 }
 
 export default function Receipt({ sale, onClose }: ReceiptProps) {
+  // Usability Heuristic: User Control & Freedom (Esc closes receipt)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
   const handlePrint = () => {
     const printWindow = window.open('', '_blank', 'width=500,height=850');
     if (!printWindow) {
@@ -155,10 +166,10 @@ export default function Receipt({ sale, onClose }: ReceiptProps) {
   return (
     <>
       <div className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm animate-fade-in" onClick={onClose} />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-md bg-white rounded-[35px] border border-slate-200 shadow-[0_30px_80px_rgba(15,23,42,0.18)] flex flex-col max-h-[90vh] overflow-hidden animate-fade-in text-slate-800">
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-md bg-white rounded-3xl border border-slate-200/80 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-fade-in text-slate-800">
 
         {/* Receipt wrapper (Printed area) */}
-        <div id="print-receipt-root" className="p-8 bg-white overflow-y-auto flex-1 custom-scrollbar relative">
+        <div id="print-receipt-root" className="p-6 bg-white overflow-y-auto flex-1 custom-scrollbar relative">
 
           {/* Watermark stamp for voided receipts */}
           {isCancelled && (

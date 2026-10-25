@@ -7,7 +7,6 @@ import {
   Truck,
   Bell,
   LogOut,
-  RefreshCcw,
   CalendarClock
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
@@ -25,8 +24,10 @@ const allLinks = [
 ];
 
 export default function Sidebar() {
-  const { user, logout } = useApp();
+  const { user, logout, getLowStock, getInventoryAlerts } = useApp();
   const navigate = useNavigate();
+
+  const notificationCount = getLowStock().length + getInventoryAlerts().length;
 
   // Filter links based on user role
   const links = allLinks.filter(link => link.roles.includes(user?.role || ''));
@@ -56,6 +57,7 @@ export default function Sidebar() {
       <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto custom-scrollbar">
         {links.map((item) => {
           const Icon = item.icon;
+          const isNotif = item.path === '/notifications';
           return (
             <NavLink
               key={item.label}
@@ -67,8 +69,13 @@ export default function Sidebar() {
                 }`
               }
             >
-              <Icon size={20} className="relative z-10" />
+              <Icon size={20} className="relative z-10 flex-shrink-0" />
               <span className="text-sm relative z-10 tracking-wide">{item.label}</span>
+              {isNotif && notificationCount > 0 && (
+                <span className="ml-auto relative z-10 px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white shadow-xs">
+                  {notificationCount}
+                </span>
+              )}
             </NavLink>
           );
         })}
@@ -76,21 +83,6 @@ export default function Sidebar() {
 
       {/* Sidebar Footer */}
       <div className="p-6 border-t border-white/5 bg-[#1a1a2e]/30 space-y-4">
-
-
-        <button
-          onClick={() => {
-            if (window.confirm('CRITICAL: Sync terminal with central warehouse? All local data will be wiped.')) {
-              localStorage.clear();
-              window.location.href = '/login';
-            }
-          }}
-          className="flex items-center gap-4 w-full px-5 py-4 rounded-2xl text-gray-500 hover:text-white hover:bg-white/5 transition-all group"
-        >
-          <RefreshCcw size={20} className="group-hover:rotate-180 transition-transform duration-500" />
-          <span className="font-bold text-sm">Sync Warehouse</span>
-        </button>
-
         <button
           onClick={() => {
             logout();

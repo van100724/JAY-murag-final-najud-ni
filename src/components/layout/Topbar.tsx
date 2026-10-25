@@ -203,11 +203,14 @@ export default function Topbar() {
       <div className="flex items-center gap-6">
         <button 
           onClick={() => navigate('/notifications')}
-          className="relative text-slate-400 hover:text-[#92400e] transition-colors cursor-pointer"
+          className="relative p-2.5 text-slate-500 hover:text-[#c2410c] hover:bg-orange-50/60 rounded-xl transition-all cursor-pointer group"
+          title="System Notifications"
         >
-          <Bell size={22} />
+          <Bell size={20} className="group-hover:scale-105 transition-transform" />
           {totalNotifications > 0 && (
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[#f8fafc]" />
+            <span className="absolute 1 top-1 right-1 px-1.5 min-w-[18px] h-[18px] bg-[#c2410c] text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-xs">
+              {totalNotifications > 99 ? '99+' : totalNotifications}
+            </span>
           )}
         </button>
 

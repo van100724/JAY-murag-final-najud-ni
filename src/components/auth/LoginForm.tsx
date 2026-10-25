@@ -118,10 +118,48 @@ export default function LoginForm() {
         </span>
       </button>
 
-      <div className="text-center">
-        <button type="button" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors">
+      {/* Sample Demo Credentials for Cashier & Admin */}
+      <div className="pt-5 border-t border-slate-100 space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+            Sample Accounts
+          </span>
+          <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200/50">
+            Click to Auto-Fill
+          </span>
+        </div>
 
-        </button>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setForm({ username: 'admin', password: 'admin123' });
+              if (error) setError('');
+            }}
+            className="p-3.5 bg-slate-50 hover:bg-orange-50/70 border border-slate-200 hover:border-orange-300 rounded-2xl text-left transition-all group cursor-pointer shadow-sm hover:shadow"
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-black text-slate-800 group-hover:text-[#c2410c] transition-colors">Admin</span>
+              <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-orange-100 text-[#c2410c]">All Access</span>
+            </div>
+            <p className="text-[10px] text-slate-400 font-mono">admin / admin123</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setForm({ username: 'cashier', password: 'cashier123' });
+              if (error) setError('');
+            }}
+            className="p-3.5 bg-slate-50 hover:bg-blue-50/70 border border-slate-200 hover:border-blue-300 rounded-2xl text-left transition-all group cursor-pointer shadow-sm hover:shadow"
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-black text-slate-800 group-hover:text-blue-600 transition-colors">Cashier</span>
+              <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">POS Only</span>
+            </div>
+            <p className="text-[10px] text-slate-400 font-mono">cashier / cashier123</p>
+          </button>
+        </div>
       </div>
     </form>
   );

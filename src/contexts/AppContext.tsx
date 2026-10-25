@@ -127,36 +127,104 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         api.getAlerts()
       ]);
       
-      // Ensure all dates fetched from MariaDB are real Date objects for reports/charts
-      const parsedSales = s.map((sale: any) => ({
-        ...sale,
-        saleDate: new Date(sale.saleDate)
-      }));
-      
-      const parsedProducts = p.map((prod: any) => ({
-        ...prod,
-        costPrice: prod.costPrice !== undefined ? Number(prod.costPrice) : Number(prod.cost_price ?? 0),
-        reorderLevel: prod.reorderLevel !== undefined ? Number(prod.reorderLevel) : Number(prod.reorder_level ?? 0),
-      }));
+      if (Array.isArray(p) && p.length > 0) {
+        // Ensure all dates fetched from MariaDB are real Date objects for reports/charts
+        const parsedSales = s.map((sale: any) => ({
+          ...sale,
+          saleDate: new Date(sale.saleDate)
+        }));
+        
+        const parsedProducts = p.map((prod: any) => ({
+          ...prod,
+          costPrice: prod.costPrice !== undefined ? Number(prod.costPrice) : Number(prod.cost_price ?? 0),
+          reorderLevel: prod.reorderLevel !== undefined ? Number(prod.reorderLevel) : Number(prod.reorder_level ?? 0),
+        }));
 
-      setProducts(parsedProducts);
-      setSales(parsedSales);
-      setSuppliers(sup);
-      setAlerts(a);
-      
-      // Sync the local data layer (optional but good for compatibility)
-      importInventory({ products: p, stockMovements: [], alerts: a });
-      importSales({ sales: parsedSales, TAX_RATE: 0.12 });
-      // importSuppliers(sup); // Not exported or used correctly? Just state is enough.
+        setProducts(parsedProducts);
+        setSales(parsedSales);
+        setSuppliers(sup);
+        setAlerts(a);
+        
+        // Sync the local data layer
+        importInventory({ products: p, stockMovements: [], alerts: a });
+        importSales({ sales: parsedSales, TAX_RATE: 0.12 });
+      }
     } catch (err) {
-      console.error('Failed to fetch data from XAMPP Backend:', err);
+      // Backend polling failed or offline - keep local state intact
     }
   };
 
   // Initialize and implement Polling
   useEffect(() => {
     const init = async () => {
-      await refreshAllData();
+      let hasData = false;
+      try {
+        const [p, s, sup, a] = await Promise.all([
+          api.getProducts(),
+          api.getSales(),
+          api.getSuppliers(),
+          api.getAlerts()
+        ]);
+        
+        if (Array.isArray(p) && p.length > 0) {
+          const parsedSales = s.map((sale: any) => ({
+            ...sale,
+            saleDate: new Date(sale.saleDate)
+          }));
+          
+          const parsedProducts = p.map((prod: any) => ({
+            ...prod,
+            costPrice: prod.costPrice !== undefined ? Number(prod.costPrice) : Number(prod.cost_price ?? 0),
+            reorderLevel: prod.reorderLevel !== undefined ? Number(prod.reorderLevel) : Number(prod.reorder_level ?? 0),
+          }));
+
+          setProducts(parsedProducts);
+          setSales(parsedSales);
+          setSuppliers(sup);
+          setAlerts(a);
+          
+          importInventory({ products: p, stockMovements: [], alerts: a });
+          importSales({ sales: parsedSales, TAX_RATE: 0.12 });
+          hasData = true;
+        }
+      } catch (err) {
+        console.warn('Backend unavailable, checking local storage cache...', err);
+      }
+
+      if (!hasData) {
+        // Check localStorage cache
+        const cachedProducts = localStorage.getItem('pos_products');
+        const cachedSales = localStorage.getItem('pos_sales');
+        const cachedSuppliers = localStorage.getItem('pos_suppliers');
+        const cachedAlerts = localStorage.getItem('pos_alerts');
+
+        if (cachedProducts) {
+          try {
+            const p = JSON.parse(cachedProducts);
+            if (Array.isArray(p) && p.length > 0) {
+              setProducts(p);
+              if (cachedSales) {
+                const s = JSON.parse(cachedSales).map((sale: any) => ({
+                  ...sale,
+                  saleDate: new Date(sale.saleDate)
+                }));
+                setSales(s);
+              }
+              if (cachedSuppliers) setSuppliers(JSON.parse(cachedSuppliers));
+              if (cachedAlerts) setAlerts(JSON.parse(cachedAlerts));
+              hasData = true;
+            }
+          } catch (e) {
+            console.error('Failed to parse cached data:', e);
+          }
+        }
+      }
+
+      // If no data exists yet, automatically seed sample data for Cashier & Admin!
+      if (!hasData) {
+        console.log('No existing inventory detected. Auto-seeding sample data for cashier and admin...');
+        await seedDemoDatabase();
+      }
       
       // Handle User and Cart separately as they are purely auth-based
       const savedUser = localStorage.getItem('pos_user');

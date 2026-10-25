@@ -102,51 +102,78 @@ export default function LowStockWidget() {
   };
 
   return (
-    <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm h-full flex flex-col justify-between">
+    <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm h-full flex flex-col justify-between">
       <div>
-        <div className="flex items-center gap-3 mb-6">
-          <AlertCircle size={22} className="text-[#9a3412]" />
-          <h2 className="text-lg font-bold text-slate-800">
-            Low Stock Alerts
-          </h2>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#c2410c] flex items-center justify-center">
+              <AlertCircle size={18} />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900 leading-tight">
+                Low Stock Alerts
+              </h2>
+              <p className="text-[11px] text-slate-400">Inventory items needing restock</p>
+            </div>
+          </div>
+          {lowStockProducts.length > 0 && (
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200">
+              {lowStockProducts.length} Alert{lowStockProducts.length > 1 ? 's' : ''}
+            </span>
+          )}
         </div>
 
-        <p className="text-xs text-slate-500 mb-6 leading-relaxed">
-          {lowStockProducts.length} items require immediate procurement attention.
-        </p>
-
-        <div className="space-y-4">
-          {lowStockProducts.slice(0, 3).map((product) => (
+        <div className="space-y-3 mt-4">
+          {lowStockProducts.slice(0, 4).map((product) => (
             <div
               key={product.id}
-              className="flex items-center gap-4 p-4 border border-slate-100 rounded-xl hover:border-slate-200 transition-all bg-slate-50/50"
+              className="flex items-center gap-3.5 p-3 rounded-xl border border-slate-100 hover:border-slate-200 transition-all bg-slate-50/60"
             >
-              <div className="w-14 h-14 rounded-lg overflow-hidden border border-slate-200 bg-white flex-shrink-0">
-                <img src={product.image || 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=100&h=100&fit=crop'} alt={product.name} className="w-full h-full object-cover" />
+              <div className="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 bg-white flex-shrink-0">
+                <img
+                  src={product.image || 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=100&h=100&fit=crop'}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-[11px] text-slate-800 truncate uppercase">{product.name}</p>
-                <p className="text-[10px] text-slate-400 font-medium">SKU: {product.sku}</p>
-                <p className={`text-[11px] font-black mt-1 ${product.quantity === 0 ? 'text-red-500' : 'text-[#9a3412]'}`}>
-                  Stock: {product.quantity === 0 ? 'Out of Stock' : `${product.quantity} Units Left`}
-                </p>
+                <div className="flex items-center justify-between gap-1">
+                  <p className="font-bold text-xs text-slate-900 truncate">{product.name}</p>
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-md flex-shrink-0 ${
+                    product.quantity === 0
+                      ? 'bg-rose-100 text-rose-700'
+                      : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {product.quantity === 0 ? 'Out of Stock' : `${product.quantity} left`}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-400">
+                  <span className="font-mono">SKU: {product.sku}</span>
+                  <span>•</span>
+                  <span>Min: {product.reorderLevel}</span>
+                </div>
               </div>
             </div>
           ))}
+
           {lowStockProducts.length === 0 && (
-            <div className="py-8 text-center border border-dashed border-slate-200 rounded-xl">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Inventory Levels Optimal</p>
+            <div className="py-10 text-center border border-dashed border-slate-200 rounded-xl">
+              <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-2">
+                ✓
+              </div>
+              <p className="text-xs font-bold text-slate-700">All Stock Levels Optimal</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">No products currently below reorder levels</p>
             </div>
           )}
         </div>
       </div>
 
       {lowStockProducts.length > 0 && (
-        <button 
+        <button
           onClick={handleGenerateReport}
-          className="w-full mt-6 py-3 border border-slate-200 rounded-xl text-slate-500 text-[10px] font-bold uppercase hover:bg-slate-50 transition-all tracking-wider"
+          className="w-full mt-5 py-2.5 bg-orange-50 hover:bg-[#c2410c] text-[#c2410c] hover:text-white border border-orange-200/80 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
         >
-          Generate Full Procurement Report
+          Generate Procurement Report
         </button>
       )}
     </div>
