@@ -1,16 +1,38 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Bell, X, Package, CalendarClock, ArrowRight } from 'lucide-react';
+import { Search, Bell, X, Package, CalendarClock, ArrowRight, HelpCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../contexts/AppContext';
+import HelpModal from '../ui/HelpModal';
 
 export default function Topbar() {
   const navigate = useNavigate();
-  const { getLowStock, getInventoryAlerts, products, sales } = useApp();
+  const { getLowStock, getInventoryAlerts, products, sales, user } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   
   const totalNotifications = getLowStock().length + getInventoryAlerts().length;
+
+  // Keyboard shortcut: Ctrl+K or '/' to focus global search, Esc to close
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        setShowResults(true);
+      } else if (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        setShowResults(true);
+      } else if (e.key === 'Escape') {
+        setShowResults(false);
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Filter products and sales based on searchQuery
   const filteredProducts = searchQuery.trim().length >= 2 
@@ -81,6 +103,7 @@ export default function Topbar() {
             <Search size={18} />
           </div>
           <input
+            ref={searchInputRef}
             type="text"
             value={searchQuery}
             onChange={(e) => {
@@ -88,21 +111,28 @@ export default function Topbar() {
               setShowResults(true);
             }}
             onFocus={() => setShowResults(true)}
-            placeholder="Search SKU, Serial, or Order..."
-            className="w-full bg-slate-100 border border-slate-200 rounded-full py-2.5 pl-12 pr-10 outline-none focus:bg-white focus:border-[#92400e]/30 focus:ring-4 focus:ring-[#92400e]/5 transition-all text-sm text-slate-700"
+            placeholder="Search SKU, Serial, or Order... (Press '/' or Ctrl+K)"
+            className="w-full bg-slate-100 border border-slate-200 rounded-full py-2.5 pl-12 pr-20 outline-none focus:bg-white focus:border-[#92400e]/30 focus:ring-4 focus:ring-[#92400e]/5 transition-all text-sm text-slate-700"
           />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('');
-                setShowResults(false);
-              }}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <X size={16} />
-            </button>
-          )}
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setShowResults(false);
+                }}
+                className="text-slate-400 hover:text-slate-600 transition-colors p-1"
+                aria-label="Clear search"
+              >
+                <X size={16} />
+              </button>
+            ) : (
+              <kbd className="hidden sm:inline-block px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-[10px] text-slate-400 font-bold shadow-sm">
+                Ctrl+K
+              </kbd>
+            )}
+          </div>
         </form>
 
         {/* Autocomplete Dropdown */}
@@ -200,9 +230,28 @@ export default function Topbar() {
         )}
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4">
+        {/* System Status Indicator - Heuristic 1 */}
+        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-[10px] font-black text-emerald-700 tracking-wider uppercase" title="System database is online and real-time syncing">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Database Synced</span>
+        </div>
+
+        {/* Help & Documentation Button - Heuristic 10 */}
+        <button
+          type="button"
+          onClick={() => setShowHelp(true)}
+          className="p-2 text-slate-400 hover:text-[#92400e] hover:bg-slate-100 rounded-xl transition-all"
+          title="Open Help & System Guide"
+          aria-label="Help and documentation"
+        >
+          <HelpCircle size={20} />
+        </button>
+
+        {/* Notifications Icon with count - Heuristic 1 & 6 */}
         <button 
           onClick={() => navigate('/notifications')}
+<<<<<<< HEAD
           className="relative p-2.5 text-slate-500 hover:text-[#c2410c] hover:bg-orange-50/60 rounded-xl transition-all cursor-pointer group"
           title="System Notifications"
         >
@@ -210,20 +259,43 @@ export default function Topbar() {
           {totalNotifications > 0 && (
             <span className="absolute 1 top-1 right-1 px-1.5 min-w-[18px] h-[18px] bg-[#c2410c] text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-xs">
               {totalNotifications > 99 ? '99+' : totalNotifications}
+=======
+          className="relative p-2 text-slate-400 hover:text-[#92400e] hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+          title={`${totalNotifications} active notifications`}
+          aria-label="View notifications"
+        >
+          <Bell size={20} />
+          {totalNotifications > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+              {totalNotifications}
+>>>>>>> 6bb8b4ca909d000fe6bb6a013af9a6f12a6b990a
             </span>
           )}
         </button>
 
-        <div className="flex items-center gap-3 border-l border-slate-200 pl-6">
-          <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden border border-slate-300">
+        {/* User Identity Info - Heuristic 1 & 6 */}
+        <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
+          <div className="hidden md:flex flex-col text-right">
+            <span className="text-xs font-black text-slate-800 leading-tight">
+              {user?.name || (user?.role === 'admin' ? 'Administrator' : 'Cashier')}
+            </span>
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#92400e]">
+              {user?.role || 'Guest'}
+            </span>
+          </div>
+
+          <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden border border-slate-300 shadow-sm shrink-0">
             <img 
-              src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" 
-              alt="Profile"
+              src={user?.role === 'cashier' ? "https://api.dicebear.com/7.x/avataaars/svg?seed=CashierJay" : "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"} 
+              alt={user?.name || 'User Avatar'}
               className="w-full h-full object-cover"
             />
           </div>
         </div>
       </div>
+
+      {/* Help Modal */}
+      <HelpModal open={showHelp} onClose={() => setShowHelp(false)} />
     </header>
   );
 }

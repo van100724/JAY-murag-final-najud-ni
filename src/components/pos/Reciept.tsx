@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 import { useEffect } from 'react';
+=======
+>>>>>>> 6bb8b4ca909d000fe6bb6a013af9a6f12a6b990a
 import { Printer, RefreshCw, CheckCircle2, User, Calendar, CreditCard, Ban } from 'lucide-react';
 
 interface ReceiptItem {

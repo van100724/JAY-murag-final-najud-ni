@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { ToastContainer, type ToastItem } from '../components/ui/Toast';
 import {
   getAllProducts,
   searchProducts,
@@ -86,6 +87,9 @@ interface AppContextType {
   updateCartQty: (productId: string, quantity: number) => void;
   clearCart: () => void;
 
+  // Feedback
+  showToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
+
   // Auth
   user: User | null;
   isInitialized: boolean;
@@ -116,6 +120,19 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
+    const id = `${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3800);
+  }, []);
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
 
   // Central function to fetch all data from XAMPP Backend
   const refreshAllData = async () => {
@@ -150,7 +167,34 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         importSales({ sales: parsedSales, TAX_RATE: 0.12 });
       }
     } catch (err) {
+<<<<<<< HEAD
       // Backend polling failed or offline - keep local state intact
+=======
+      console.warn('Backend unavailable, reading from local terminal storage:', err);
+      const savedProducts = localStorage.getItem('pos_products');
+      if (savedProducts) {
+        try {
+          const parsed = JSON.parse(savedProducts);
+          if (Array.isArray(parsed) && parsed.length > 0) setProducts(parsed);
+        } catch { /* use current */ }
+      }
+      const savedSales = localStorage.getItem('pos_sales');
+      if (savedSales) {
+        try {
+          const parsed = JSON.parse(savedSales);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setSales(parsed.map((s: any) => ({ ...s, saleDate: new Date(s.saleDate) })));
+          }
+        } catch { /* use current */ }
+      }
+      const savedSuppliers = localStorage.getItem('pos_suppliers');
+      if (savedSuppliers) {
+        try {
+          const parsed = JSON.parse(savedSuppliers);
+          if (Array.isArray(parsed) && parsed.length > 0) setSuppliers(parsed);
+        } catch { /* use current */ }
+      }
+>>>>>>> 6bb8b4ca909d000fe6bb6a013af9a6f12a6b990a
     }
   };
 
@@ -273,8 +317,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         reorderLevel: prod.reorderLevel !== undefined ? Number(prod.reorderLevel) : Number(prod.reorder_level ?? 0),
       }));
       setProducts(parsedProducts);
+      showToast(`Product "${productData.name}" added successfully.`, 'success');
     } catch (err) {
       console.error('Failed to add product:', err);
+      showToast('Failed to add product. Please check your network.', 'error');
     }
   };
 
@@ -288,8 +334,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         reorderLevel: prod.reorderLevel !== undefined ? Number(prod.reorderLevel) : Number(prod.reorder_level ?? 0),
       }));
       setProducts(parsedProducts);
+      showToast('Product updated successfully.', 'success');
     } catch (err) {
       console.error('Failed to update product:', err);
+      showToast('Failed to update product.', 'error');
     }
   };
 
@@ -303,8 +351,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         reorderLevel: prod.reorderLevel !== undefined ? Number(prod.reorderLevel) : Number(prod.reorder_level ?? 0),
       }));
       setProducts(parsedProducts);
+      showToast('Product removed from catalog.', 'info');
     } catch (err) {
       console.error('Failed to delete product:', err);
+      showToast('Failed to delete product.', 'error');
     }
   };
 
@@ -333,6 +383,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       await api.deleteAlert(alertId);
       const updatedAlerts = await api.getAlerts();
       setAlerts(updatedAlerts);
+      showToast('Notification alert cleared.', 'info');
     } catch (err) {
       console.error('Failed to clear alert:', err);
     }
@@ -342,6 +393,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     try {
       await api.clearAllAlerts();
       setAlerts([]);
+      showToast('All notifications cleared.', 'info');
     } catch (err) {
       console.error('Failed to clear all alerts:', err);
     }
@@ -387,10 +439,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       
       // Immediate accuracy: Refresh all data to sync state across the app
       await refreshAllData();
+      showToast(`Sale recorded successfully! Order #${id}`, 'success');
       
       return saleData;
     } catch (err) {
       console.error('Failed to create sale:', err);
+      showToast('Failed to record sale.', 'error');
       return null;
     }
   };
@@ -399,9 +453,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     try {
       await api.cancelSale(saleId);
       await refreshAllData();
+      showToast('Transaction voided and stock restored.', 'info');
     } catch (err) {
       console.warn('Failed to cancel sale in database, using offline fallback:', err);
       setSales(prev => prev.map(sale => sale.id === saleId ? { ...sale, status: 'cancelled' } : sale));
+      showToast('Transaction voided (offline mode).', 'info');
     }
   };
 
@@ -426,9 +482,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       await api.addSupplier(newSupplier);
       const updatedSuppliers = await api.getSuppliers();
       setSuppliers(updatedSuppliers);
+      showToast(`Supplier "${supplierData.name}" registered.`, 'success');
     } catch (err) {
       console.warn('Failed to add supplier to database, using offline fallback:', err);
       setSuppliers(prev => [...prev, newSupplier]);
+      showToast(`Supplier "${supplierData.name}" registered (offline).`, 'success');
     }
   };
 
@@ -437,9 +495,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       await api.updateSupplier(id, updates);
       const updatedSuppliers = await api.getSuppliers();
       setSuppliers(updatedSuppliers);
+      showToast('Supplier updated successfully.', 'success');
     } catch (err) {
       console.warn('Failed to update supplier in database, using offline fallback:', err);
       setSuppliers(prev => prev.map(sup => sup.id === id ? { ...sup, ...updates } : sup));
+      showToast('Supplier updated (offline).', 'success');
     }
   };
 
@@ -448,9 +508,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       await api.deleteSupplier(id);
       const updatedSuppliers = await api.getSuppliers();
       setSuppliers(updatedSuppliers);
+      showToast('Supplier removed.', 'info');
     } catch (err) {
       console.warn('Failed to delete supplier from database, using offline fallback:', err);
       setSuppliers(prev => prev.filter(sup => sup.id !== id));
+      showToast('Supplier removed (offline).', 'info');
     }
   };
 
@@ -474,6 +536,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         price: product.price
       }];
     });
+    showToast(`Added ${product.name} to cart.`, 'success');
   };
 
   const removeFromCart = (productId: string) => {
@@ -492,7 +555,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     ));
   };
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    setCart([]);
+    showToast('Current order cart cleared.', 'info');
+  };
 
   // Auth functions
   const login = (email: string, role: 'admin' | 'cashier') => {
@@ -1062,6 +1128,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       setSuppliers(mockSuppliers);
       setAlerts(mockAlerts);
       
+      localStorage.setItem('pos_products', JSON.stringify(mockProducts));
+      localStorage.setItem('pos_sales', JSON.stringify(mockSales));
+      localStorage.setItem('pos_suppliers', JSON.stringify(mockSuppliers));
+
       importInventory({ products: mockProducts, stockMovements: [], alerts: mockAlerts });
       importSales({ sales: mockSales, TAX_RATE: 0.12 });
       importSuppliers({ suppliers: mockSuppliers, purchaseOrders: [], payments: [], ratings: [] });
@@ -1106,7 +1176,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     login,
     logout,
     seedDemoDatabase,
+    showToast,
   };
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  return (
+    <AppContext.Provider value={value}>
+      {children}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+    </AppContext.Provider>
+  );
 };

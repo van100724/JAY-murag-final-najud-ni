@@ -113,6 +113,7 @@ export default function Inventory() {
             <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 group-hover:scale-105 transition-transform flex-shrink-0">
               <Boxes size={26} />
             </div>
+<<<<<<< HEAD
             <div className="flex-1 min-w-0">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 Warehouse Catalog
@@ -125,6 +126,14 @@ export default function Inventory() {
                   {inStockCount} SKUs in optimal stock
                 </span>
               </div>
+=======
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Catalog</p>
+              <p className="text-2xl font-black text-slate-800">{products.length} Products</p>
+              <p className="text-[10px] text-blue-600 font-bold mt-0.5">
+                {products.filter(p => p.quantity === 0).length} Out of Stock
+              </p>
+>>>>>>> 6bb8b4ca909d000fe6bb6a013af9a6f12a6b990a
             </div>
           </div>
         </div>
