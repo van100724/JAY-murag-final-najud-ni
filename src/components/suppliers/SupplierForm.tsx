@@ -68,18 +68,11 @@ export default function SupplierForm({ open, onClose, supplier }: SupplierFormPr
     }
   }, [open, supplier]);
 
-<<<<<<< HEAD
   // Usability Heuristic: User Control & Freedom (Esc closes modal)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && open) {
-=======
-  // Close on Escape key (Heuristic 3: User control and freedom)
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
->>>>>>> 6bb8b4ca909d000fe6bb6a013af9a6f12a6b990a
         onClose();
       }
     };
@@ -87,7 +80,6 @@ export default function SupplierForm({ open, onClose, supplier }: SupplierFormPr
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, onClose]);
 
-<<<<<<< HEAD
   // Usability Heuristic / Input Validation: Disallow characters (letters) on phone numbers
   const handlePhoneKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Block any alphabetic letters or invalid symbols, allow numbers, +, spaces, dashes, parens, and navigation/shortcut keys
@@ -104,8 +96,6 @@ export default function SupplierForm({ open, onClose, supplier }: SupplierFormPr
     }
   };
 
-=======
->>>>>>> 6bb8b4ca909d000fe6bb6a013af9a6f12a6b990a
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
@@ -130,36 +120,29 @@ export default function SupplierForm({ open, onClose, supplier }: SupplierFormPr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-<<<<<<< HEAD
     if (!formData.name.trim() || !formData.contactPerson.trim()) return;
 
     setIsSubmitting(true);
     try {
+      const sanitizedData = {
+        ...formData,
+        name: formData.name.trim(),
+        contactPerson: formData.contactPerson.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        address: formData.address.trim(),
+        averageDeliveryTime: Math.max(1, Math.floor(Number(formData.averageDeliveryTime) || 1)),
+      };
+
       if (supplier && supplier.id) {
-        await updateExistingSupplier(supplier.id, formData);
+        await updateExistingSupplier(supplier.id, sanitizedData);
       } else {
-        await addNewSupplier(formData as any);
+        await addNewSupplier(sanitizedData as any);
       }
       setFormData(defaultForm);
       onClose();
     } finally {
       setIsSubmitting(false);
-=======
-    const sanitizedData = {
-      ...formData,
-      name: formData.name.trim(),
-      contactPerson: formData.contactPerson.trim(),
-      email: formData.email.trim(),
-      phone: formData.phone.trim(),
-      address: formData.address.trim(),
-      averageDeliveryTime: Math.max(1, Math.floor(Number(formData.averageDeliveryTime) || 1)),
-    };
-
-    if (supplier && supplier.id) {
-      await updateExistingSupplier(supplier.id, sanitizedData);
-    } else {
-      await addNewSupplier(sanitizedData as any);
->>>>>>> 6bb8b4ca909d000fe6bb6a013af9a6f12a6b990a
     }
   };
 

@@ -7,6 +7,7 @@ import Reports from './pages/Reports';
 import Supplier from './pages/Supplier';
 import Notifications from './pages/Notifications';
 import SalesHistory from './pages/SalesHistory';
+import AuditLogs from './pages/AuditLogs';
 import Login from './pages/Login';
 import { useApp } from './contexts/AppContext';
 
@@ -92,6 +93,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={['admin', 'cashier']}>
                 <SalesHistory />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/audit-logs" 
+            element={
+              <ProtectedRoute roles={['admin']}>
+                <AuditLogs />
               </ProtectedRoute>
             } 
           />

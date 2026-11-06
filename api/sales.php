@@ -74,6 +74,8 @@ switch ($method) {
 
             // Insert items and update stock
             foreach ($data['items'] as $item) {
+                $itemPrice = $item['price'] ?? ($item['unitPrice'] ?? 0);
+                $itemQty = intval($item['quantity']);
                 $itemSql = "INSERT INTO sale_items (sale_id, product_id, product_name, quantity, price) 
                             VALUES (?, ?, ?, ?, ?)";
                 $itemStmt = $pdo->prepare($itemSql);
@@ -81,39 +83,43 @@ switch ($method) {
                     $data['id'], 
                     $item['productId'], 
                     $item['productName'], 
-                    $item['quantity'], 
-                    $item['price'] ?? $item['unitPrice']
+                    $itemQty, 
+                    $itemPrice
                 ]);
 
-                // Decrease stock and get product info for alert check
-                $updateSql = "UPDATE products SET quantity = quantity - ? WHERE id = ?";
+                // Decrease stock and get product info for alert check (match by id, fallback to name)
+                $updateSql = "UPDATE products SET quantity = GREATEST(0, quantity - ?) WHERE id = ?";
                 $updateStmt = $pdo->prepare($updateSql);
-                $updateStmt->execute([$item['quantity'], $item['productId']]);
+                $updateStmt->execute([$itemQty, $item['productId']]);
+                if ($updateStmt->rowCount() === 0 && !empty($item['productName'])) {
+                    $fallbackStmt = $pdo->prepare("UPDATE products SET quantity = GREATEST(0, quantity - ?) WHERE name = ?");
+                    $fallbackStmt->execute([$itemQty, $item['productName']]);
+                }
 
                 // Check for low stock alert
-                $prodStmt = $pdo->prepare("SELECT name, quantity, reorder_level FROM products WHERE id = ?");
-                $prodStmt->execute([$item['productId']]);
+                $prodStmt = $pdo->prepare("SELECT id, name, quantity, reorder_level FROM products WHERE id = ? OR name = ? LIMIT 1");
+                $prodStmt->execute([$item['productId'], $item['productName'] ?? '']);
                 $product = $prodStmt->fetch();
 
                 if ($product && $product['quantity'] <= $product['reorder_level']) {
                     // Check if alert already exists to avoid duplicates
                     $alertCheck = $pdo->prepare("SELECT id FROM alerts WHERE product_id = ? AND type = 'low-stock'");
-                    $alertCheck->execute([$item['productId']]);
+                    $alertCheck->execute([$product['id']]);
                     if (!$alertCheck->fetch()) {
                         $alertId = 'ALT-' . bin2hex(random_bytes(4));
                         $alertMsg = "Low stock alert: " . $product['name'] . " has only " . $product['quantity'] . " units left.";
                         $alertStmt = $pdo->prepare("INSERT INTO alerts (id, product_id, type, message) VALUES (?, ?, 'low-stock', ?)");
-                        $alertStmt->execute([$alertId, $item['productId'], $alertMsg]);
+                        $alertStmt->execute([$alertId, $product['id'], $alertMsg]);
                     }
                 }
             }
 
             $pdo->commit();
-            echo json_encode(['message' => 'Sale completed', 'id' => $data['id']]);
+            echo json_encode(['success' => true, 'message' => 'Sale completed', 'id' => $data['id']]);
         } catch (Exception $e) {
             $pdo->rollBack();
             http_response_code(500);
-            echo json_encode(['error' => $e->getMessage()]);
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
         }
         break;
 
@@ -121,13 +127,13 @@ switch ($method) {
         $id = $_GET['id'] ?? null;
         if (!$id) {
             http_response_code(400);
-            echo json_encode(['error' => 'ID required']);
+            echo json_encode(['success' => false, 'error' => 'ID required']);
             break;
         }
         $pdo->beginTransaction();
         try {
             // Get current sale status
-            $stmt = $pdo->prepare("SELECT status FROM sales WHERE id = ?");
+            $stmt = $pdo->prepare("SELECT * FROM sales WHERE id = ?");
             $stmt->execute([$id]);
             $sale = $stmt->fetch();
             
@@ -144,26 +150,55 @@ switch ($method) {
             $updateSale->execute([$id]);
             
             // Get sale items to restore product stock
-            $itemStmt = $pdo->prepare("SELECT product_id, quantity FROM sale_items WHERE sale_id = ?");
+            $itemStmt = $pdo->prepare("SELECT product_id, product_name, quantity, price FROM sale_items WHERE sale_id = ?");
             $itemStmt->execute([$id]);
             $items = $itemStmt->fetchAll();
             
+            $restoredItems = [];
             foreach ($items as $item) {
+                $qtyToRestore = intval($item['quantity']);
+                $prodId = $item['product_id'];
+                $prodName = $item['product_name'] ?? '';
+
+                // Fetch current product stock before restoring
+                $prodStmt = $pdo->prepare("SELECT id, name, quantity, reorder_level FROM products WHERE id = ? OR name = ? LIMIT 1");
+                $prodStmt->execute([$prodId, $prodName]);
+                $productBefore = $prodStmt->fetch();
+                $prevQty = $productBefore ? intval($productBefore['quantity']) : 0;
+                $targetProdId = $productBefore ? $productBefore['id'] : $prodId;
+
+                // Restore stock in products table
                 $restoreStock = $pdo->prepare("UPDATE products SET quantity = quantity + ? WHERE id = ?");
-                $restoreStock->execute([$item['quantity'], $item['product_id']]);
-                
-                // If stock is now healthy, remove the low-stock alert
-                $prodStmt = $pdo->prepare("SELECT name, quantity, reorder_level FROM products WHERE id = ?");
-                $prodStmt->execute([$item['product_id']]);
-                $product = $prodStmt->fetch();
-                
-                if ($product && $product['quantity'] > $product['reorder_level']) {
-                    $pdo->prepare("DELETE FROM alerts WHERE product_id = ? AND type = 'low-stock'")->execute([$item['product_id']]);
+                $restoreStock->execute([$qtyToRestore, $targetProdId]);
+                if ($restoreStock->rowCount() === 0 && !empty($prodName)) {
+                    $fallbackRestore = $pdo->prepare("UPDATE products SET quantity = quantity + ? WHERE name = ?");
+                    $fallbackRestore->execute([$qtyToRestore, $prodName]);
                 }
+                
+                // Fetch updated product to verify new stock and clear resolved low-stock alert
+                $prodAfterStmt = $pdo->prepare("SELECT id, name, quantity, reorder_level FROM products WHERE id = ? OR name = ? LIMIT 1");
+                $prodAfterStmt->execute([$targetProdId, $prodName]);
+                $productAfter = $prodAfterStmt->fetch();
+                
+                if ($productAfter && intval($productAfter['quantity']) > intval($productAfter['reorder_level'])) {
+                    $pdo->prepare("DELETE FROM alerts WHERE product_id = ? AND type = 'low-stock'")->execute([$productAfter['id']]);
+                }
+
+                $restoredItems[] = [
+                    'productId' => $targetProdId,
+                    'productName' => $productAfter['name'] ?? $prodName,
+                    'quantityRestored' => $qtyToRestore,
+                    'previousStock' => $prevQty,
+                    'newStock' => $productAfter ? intval($productAfter['quantity']) : ($prevQty + $qtyToRestore)
+                ];
             }
             
             $pdo->commit();
-            echo json_encode(['success' => true, 'message' => 'Sale cancelled and stock restored successfully']);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Sale cancelled and stock restored successfully',
+                'restoredItems' => $restoredItems
+            ]);
         } catch (Exception $e) {
             $pdo->rollBack();
             http_response_code(500);

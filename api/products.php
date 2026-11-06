@@ -12,24 +12,34 @@ switch ($method) {
 
     case 'POST':
         $data = getJsonInput();
+        $costPrice = $data['cost_price'] ?? ($data['costPrice'] ?? 0);
+        $reorderLevel = $data['reorder_level'] ?? ($data['reorderLevel'] ?? 10);
         $sql = "INSERT INTO products (id, name, sku, category, price, cost_price, quantity, reorder_level, supplier, description, image) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
-            $data['id'], $data['name'], $data['sku'], $data['category'], 
-            $data['price'], $data['cost_price'], $data['quantity'], 
-            $data['reorder_level'], $data['supplier'], $data['description'], $data['image']
+            $data['id'],
+            $data['name'],
+            $data['sku'],
+            $data['category'], 
+            $data['price'],
+            $costPrice,
+            $data['quantity'], 
+            $reorderLevel,
+            $data['supplier'] ?? '',
+            $data['description'] ?? '',
+            $data['image'] ?? ''
         ]);
 
         // Check for low stock alert after creation
-        if ($data['quantity'] <= $data['reorder_level']) {
+        if (intval($data['quantity']) <= intval($reorderLevel)) {
             $alertId = 'ALT-' . bin2hex(random_bytes(4));
             $alertMsg = "Low stock alert: " . $data['name'] . " has only " . $data['quantity'] . " units left.";
             $alertStmt = $pdo->prepare("INSERT INTO alerts (id, product_id, type, message) VALUES (?, ?, 'low-stock', ?)");
             $alertStmt->execute([$alertId, $data['id'], $alertMsg]);
         }
 
-        echo json_encode(['message' => 'Product created']);
+        echo json_encode(['success' => true, 'message' => 'Product created']);
         break;
 
     case 'PUT':
@@ -40,13 +50,36 @@ switch ($method) {
             break;
         }
         $data = getJsonInput();
+        $allowedColumns = [
+            'name' => 'name',
+            'sku' => 'sku',
+            'category' => 'category',
+            'price' => 'price',
+            'cost_price' => 'cost_price',
+            'costPrice' => 'cost_price',
+            'quantity' => 'quantity',
+            'reorder_level' => 'reorder_level',
+            'reorderLevel' => 'reorder_level',
+            'supplier' => 'supplier',
+            'description' => 'description',
+            'image' => 'image',
+        ];
+        $normalized = [];
+        foreach ($data as $key => $value) {
+            if (isset($allowedColumns[$key])) {
+                $col = $allowedColumns[$key];
+                $normalized[$col] = $value;
+            }
+        }
+        if (empty($normalized)) {
+            echo json_encode(['success' => true, 'message' => 'No fields to update']);
+            break;
+        }
         $fields = [];
         $values = [];
-        foreach ($data as $key => $value) {
-            if ($key !== 'id') {
-                $fields[] = "$key = ?";
-                $values[] = $value;
-            }
+        foreach ($normalized as $col => $value) {
+            $fields[] = "$col = ?";
+            $values[] = $value;
         }
         $values[] = $id;
         $sql = "UPDATE products SET " . implode(', ', $fields) . " WHERE id = ?";
@@ -58,7 +91,7 @@ switch ($method) {
         $prodStmt->execute([$id]);
         $product = $prodStmt->fetch();
 
-        if ($product && $product['quantity'] <= $product['reorder_level']) {
+        if ($product && intval($product['quantity']) <= intval($product['reorder_level'])) {
             $alertCheck = $pdo->prepare("SELECT id FROM alerts WHERE product_id = ? AND type = 'low-stock'");
             $alertCheck->execute([$id]);
             if (!$alertCheck->fetch()) {
@@ -72,7 +105,7 @@ switch ($method) {
             $pdo->prepare("DELETE FROM alerts WHERE product_id = ? AND type = 'low-stock'")->execute([$id]);
         }
 
-        echo json_encode(['message' => 'Product updated']);
+        echo json_encode(['success' => true, 'message' => 'Product updated']);
         break;
 
     case 'DELETE':
@@ -84,7 +117,7 @@ switch ($method) {
         }
         $stmt = $pdo->prepare('DELETE FROM products WHERE id = ?');
         $stmt->execute([$id]);
-        echo json_encode(['message' => 'Product deleted']);
+        echo json_encode(['success' => true, 'message' => 'Product deleted']);
         break;
 }
 ?>

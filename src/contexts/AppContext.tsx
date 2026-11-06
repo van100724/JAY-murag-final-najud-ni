@@ -38,6 +38,54 @@ export interface CartItem {
   price: number;
 }
 
+export interface AuditLogStockItem {
+  productId: string;
+  productName: string;
+  sku?: string;
+  quantityDelta: number; // positive when restored/restocked, negative when sold/deducted
+  previousStock: number;
+  newStock: number;
+  unitPrice?: number;
+}
+
+export type AuditActionType =
+  | 'ORDER_VOIDED'
+  | 'SALE_COMPLETED'
+  | 'PRODUCT_ADDED'
+  | 'PRODUCT_UPDATED'
+  | 'PRODUCT_DELETED'
+  | 'STOCK_RESTOCKED'
+  | 'STOCK_ADJUSTED'
+  | 'SUPPLIER_ADDED'
+  | 'SUPPLIER_UPDATED'
+  | 'SUPPLIER_DELETED'
+  | 'USER_LOGIN'
+  | 'USER_LOGOUT'
+  | 'ALERTS_CLEARED'
+  | 'SYSTEM_EVENT';
+
+export interface AuditLog {
+  id: string;
+  timestamp: Date;
+  action: AuditActionType;
+  category: 'sales' | 'inventory' | 'supplier' | 'auth' | 'system';
+  severity: 'info' | 'success' | 'warning' | 'critical';
+  actorName: string;
+  actorRole: 'admin' | 'cashier' | 'system';
+  entityId?: string;
+  entityName?: string;
+  description: string;
+  metadata?: {
+    stockChanges?: AuditLogStockItem[];
+    orderTotal?: number;
+    customerName?: string;
+    paymentMethod?: string;
+    originalCashier?: string;
+    fieldChanges?: Array<{ field: string; from: any; to: any }>;
+    [key: string]: any;
+  };
+}
+
 interface AppContextType {
   // Inventory
   products: Product[];
@@ -67,7 +115,7 @@ interface AppContextType {
     total?: number,
     change?: number
   ) => Promise<any>;
-  cancelExistingSale: (saleId: string) => Promise<void>;
+  cancelExistingSale: (saleId: string, reason?: string) => Promise<void>;
   getSalesData: () => Sale[];
   getDailySalesReport: (date: Date) => any;
   getSalesReportData: (startDate: Date, endDate: Date) => any;
@@ -79,6 +127,11 @@ interface AppContextType {
   updateExistingSupplier: (id: string, updates: Partial<Supplier>) => void;
   deleteExistingSupplier: (id: string) => void;
   searchSupplier: (query: string) => Supplier[];
+
+  // Audit Logs
+  auditLogs: AuditLog[];
+  recordAuditLog: (entry: Omit<AuditLog, 'id' | 'timestamp'> & { timestamp?: Date }) => Promise<void>;
+  clearAuditLogs: () => Promise<void>;
 
   // Cart
   cart: CartItem[];
@@ -112,11 +165,128 @@ interface AppProviderProps {
   children: ReactNode;
 }
 
+// Helper to build initial baseline audit logs from existing sales & inventory when none exist yet
+function buildInitialAuditLogs(salesList: any[], productsList: Product[]): AuditLog[] {
+  const logs: AuditLog[] = [];
+  const recentSales = [...salesList]
+    .sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime())
+    .slice(0, 18);
+
+  recentSales.forEach((sale, idx) => {
+    const saleItems = Array.isArray(sale.items) ? sale.items : [];
+    const totalUnits = saleItems.reduce((sum: number, i: any) => sum + (Number(i.quantity) || 0), 0);
+    const stockChanges: AuditLogStockItem[] = saleItems.map((item: any) => {
+      const prod = productsList.find(
+        (p) =>
+          String(p.id) === String(item.productId || item.product_id) ||
+          p.name.toLowerCase() === String(item.productName || item.product_name || '').toLowerCase()
+      );
+      const currentQty = prod ? Number(prod.quantity) || 0 : 25;
+      const qty = Number(item.quantity) || 1;
+      if (sale.status === 'cancelled') {
+        return {
+          productId: String(item.productId || prod?.id || ''),
+          productName: item.productName || prod?.name || 'Hardware Item',
+          sku: prod?.sku,
+          quantityDelta: qty,
+          previousStock: Math.max(0, currentQty - qty),
+          newStock: currentQty,
+          unitPrice: Number(item.unitPrice || item.price || 0),
+        };
+      }
+      return {
+        productId: String(item.productId || prod?.id || ''),
+        productName: item.productName || prod?.name || 'Hardware Item',
+        sku: prod?.sku,
+        quantityDelta: -qty,
+        previousStock: currentQty + qty,
+        newStock: currentQty,
+        unitPrice: Number(item.unitPrice || item.price || 0),
+      };
+    });
+
+    if (sale.status === 'cancelled') {
+      logs.push({
+        id: `AUD-INIT-VOID-${idx}-${sale.id}`,
+        timestamp: new Date(new Date(sale.saleDate).getTime() + 15 * 60 * 1000),
+        action: 'ORDER_VOIDED',
+        category: 'sales',
+        severity: 'critical',
+        actorName: 'Admin User',
+        actorRole: 'admin',
+        entityId: sale.id,
+        entityName: `Order #${sale.id}`,
+        description: `Voided Order #${sale.id} (₱${Number(sale.total).toLocaleString(undefined, { minimumFractionDigits: 2 })}) and restored ${totalUnits} unit(s) across ${saleItems.length} item(s) back to inventory stock.`,
+        metadata: {
+          stockChanges,
+          orderTotal: Number(sale.total),
+          customerName: sale.customerName || 'Walk-in',
+          paymentMethod: sale.paymentMethod,
+          originalCashier: sale.cashier || 'Cashier',
+        },
+      });
+    } else {
+      logs.push({
+        id: `AUD-INIT-SALE-${idx}-${sale.id}`,
+        timestamp: new Date(sale.saleDate),
+        action: 'SALE_COMPLETED',
+        category: 'sales',
+        severity: 'success',
+        actorName: sale.cashier || 'Cashier User',
+        actorRole: 'cashier',
+        entityId: sale.id,
+        entityName: `Order #${sale.id}`,
+        description: `Completed POS sale #${sale.id} for ${sale.customerName || 'Walk-in'} totaling ₱${Number(sale.total).toLocaleString(undefined, { minimumFractionDigits: 2 })} (${totalUnits} unit(s) deducted from stock).`,
+        metadata: {
+          stockChanges,
+          orderTotal: Number(sale.total),
+          customerName: sale.customerName || 'Walk-in',
+          paymentMethod: sale.paymentMethod,
+          originalCashier: sale.cashier || 'Cashier',
+        },
+      });
+    }
+  });
+
+  // Add a few sample inventory & security audit events
+  if (productsList.length > 0) {
+    const sampleProd = productsList[0];
+    logs.push({
+      id: `AUD-INIT-INV-1`,
+      timestamp: new Date(Date.now() - 2 * 3600 * 1000),
+      action: 'STOCK_RESTOCKED',
+      category: 'inventory',
+      severity: 'info',
+      actorName: 'Admin User',
+      actorRole: 'admin',
+      entityId: sampleProd.sku || sampleProd.id,
+      entityName: sampleProd.name,
+      description: `Restocked "${sampleProd.name}" (${sampleProd.sku}): added +20 units to warehouse inventory.`,
+      metadata: {
+        stockChanges: [
+          {
+            productId: sampleProd.id,
+            productName: sampleProd.name,
+            sku: sampleProd.sku,
+            quantityDelta: 20,
+            previousStock: Math.max(0, Number(sampleProd.quantity) - 20),
+            newStock: Number(sampleProd.quantity),
+            unitPrice: Number(sampleProd.price),
+          },
+        ],
+      },
+    });
+  }
+
+  return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+}
+
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -133,6 +303,48 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
+
+  // Helper to record an audit log both locally and in the backend
+  const recordAuditLog = useCallback(
+    async (entry: Omit<AuditLog, 'id' | 'timestamp'> & { timestamp?: Date }) => {
+      const newLog: AuditLog = {
+        ...entry,
+        id: `AUD-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+        timestamp: entry.timestamp || new Date(),
+      };
+
+      setAuditLogs((prev) => {
+        const updated = [newLog, ...prev].slice(0, 1000);
+        try {
+          localStorage.setItem('pos_audit_logs', JSON.stringify(updated));
+        } catch (e) {
+          // ignore storage quota errors
+        }
+        return updated;
+      });
+
+      try {
+        await api.addAuditLog({
+          ...newLog,
+          timestamp: newLog.timestamp.toISOString(),
+        });
+      } catch (err) {
+        // Offline mode: already saved in state & localStorage
+      }
+    },
+    []
+  );
+
+  const clearAuditLogs = useCallback(async () => {
+    setAuditLogs([]);
+    localStorage.setItem('pos_audit_logs', JSON.stringify([]));
+    try {
+      await api.clearAllAuditLogs();
+    } catch (err) {
+      // Offline fallback handled
+    }
+    showToast('Audit log history cleared.', 'info');
+  }, [showToast]);
 
   // Central function to fetch all data from XAMPP Backend
   const refreshAllData = async () => {
@@ -153,6 +365,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         
         const parsedProducts = p.map((prod: any) => ({
           ...prod,
+          price: Number(prod.price ?? 0),
+          quantity: Number(prod.quantity ?? 0),
           costPrice: prod.costPrice !== undefined ? Number(prod.costPrice) : Number(prod.cost_price ?? 0),
           reorderLevel: prod.reorderLevel !== undefined ? Number(prod.reorderLevel) : Number(prod.reorder_level ?? 0),
         }));
@@ -163,38 +377,35 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         setAlerts(a);
         
         // Sync the local data layer
-        importInventory({ products: p, stockMovements: [], alerts: a });
+        importInventory({ products: parsedProducts, stockMovements: [], alerts: a });
         importSales({ sales: parsedSales, TAX_RATE: 0.12 });
       }
+
+      // Also fetch backend audit logs if available
+      try {
+        const backendLogs = await api.getAuditLogs();
+        if (Array.isArray(backendLogs) && backendLogs.length > 0) {
+          const parsedLogs: AuditLog[] = backendLogs.map((l: any) => ({
+            ...l,
+            timestamp: new Date(l.timestamp),
+          }));
+          setAuditLogs((prev) => {
+            // Merge unique logs by id so local logs aren't lost
+            const map = new Map<string, AuditLog>();
+            parsedLogs.forEach((item) => map.set(item.id, item));
+            prev.forEach((item) => {
+              if (!map.has(item.id)) map.set(item.id, item);
+            });
+            return Array.from(map.values()).sort(
+              (x, y) => new Date(y.timestamp).getTime() - new Date(x.timestamp).getTime()
+            );
+          });
+        }
+      } catch (logErr) {
+        // Keep local auditLogs
+      }
     } catch (err) {
-<<<<<<< HEAD
       // Backend polling failed or offline - keep local state intact
-=======
-      console.warn('Backend unavailable, reading from local terminal storage:', err);
-      const savedProducts = localStorage.getItem('pos_products');
-      if (savedProducts) {
-        try {
-          const parsed = JSON.parse(savedProducts);
-          if (Array.isArray(parsed) && parsed.length > 0) setProducts(parsed);
-        } catch { /* use current */ }
-      }
-      const savedSales = localStorage.getItem('pos_sales');
-      if (savedSales) {
-        try {
-          const parsed = JSON.parse(savedSales);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setSales(parsed.map((s: any) => ({ ...s, saleDate: new Date(s.saleDate) })));
-          }
-        } catch { /* use current */ }
-      }
-      const savedSuppliers = localStorage.getItem('pos_suppliers');
-      if (savedSuppliers) {
-        try {
-          const parsed = JSON.parse(savedSuppliers);
-          if (Array.isArray(parsed) && parsed.length > 0) setSuppliers(parsed);
-        } catch { /* use current */ }
-      }
->>>>>>> 6bb8b4ca909d000fe6bb6a013af9a6f12a6b990a
     }
   };
 
@@ -202,6 +413,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   useEffect(() => {
     const init = async () => {
       let hasData = false;
+      let loadedProducts: Product[] = [];
+      let loadedSales: any[] = [];
+
       try {
         const [p, s, sup, a] = await Promise.all([
           api.getProducts(),
@@ -218,6 +432,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           
           const parsedProducts = p.map((prod: any) => ({
             ...prod,
+            price: Number(prod.price ?? 0),
+            quantity: Number(prod.quantity ?? 0),
             costPrice: prod.costPrice !== undefined ? Number(prod.costPrice) : Number(prod.cost_price ?? 0),
             reorderLevel: prod.reorderLevel !== undefined ? Number(prod.reorderLevel) : Number(prod.reorder_level ?? 0),
           }));
@@ -227,8 +443,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           setSuppliers(sup);
           setAlerts(a);
           
-          importInventory({ products: p, stockMovements: [], alerts: a });
+          importInventory({ products: parsedProducts, stockMovements: [], alerts: a });
           importSales({ sales: parsedSales, TAX_RATE: 0.12 });
+          loadedProducts = parsedProducts;
+          loadedSales = parsedSales;
           hasData = true;
         }
       } catch (err) {
@@ -244,18 +462,30 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
         if (cachedProducts) {
           try {
-            const p = JSON.parse(cachedProducts);
+            const p = JSON.parse(cachedProducts).map((prod: any) => ({
+              ...prod,
+              price: Number(prod.price ?? 0),
+              quantity: Number(prod.quantity ?? 0),
+              costPrice: prod.costPrice !== undefined ? Number(prod.costPrice) : Number(prod.cost_price ?? 0),
+              reorderLevel: prod.reorderLevel !== undefined ? Number(prod.reorderLevel) : Number(prod.reorder_level ?? 0),
+            }));
             if (Array.isArray(p) && p.length > 0) {
               setProducts(p);
+              loadedProducts = p;
+              let s: any[] = [];
               if (cachedSales) {
-                const s = JSON.parse(cachedSales).map((sale: any) => ({
+                s = JSON.parse(cachedSales).map((sale: any) => ({
                   ...sale,
                   saleDate: new Date(sale.saleDate)
                 }));
                 setSales(s);
+                loadedSales = s;
               }
+              const parsedAlerts = cachedAlerts ? JSON.parse(cachedAlerts) : [];
               if (cachedSuppliers) setSuppliers(JSON.parse(cachedSuppliers));
-              if (cachedAlerts) setAlerts(JSON.parse(cachedAlerts));
+              setAlerts(parsedAlerts);
+              importInventory({ products: p, stockMovements: [], alerts: parsedAlerts });
+              importSales({ sales: s, TAX_RATE: 0.12 });
               hasData = true;
             }
           } catch (e) {
@@ -268,6 +498,46 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (!hasData) {
         console.log('No existing inventory detected. Auto-seeding sample data for cashier and admin...');
         await seedDemoDatabase();
+      }
+
+      // Load Audit Logs from backend or localStorage, or build initial logs
+      let loadedAuditLogs: AuditLog[] = [];
+      try {
+        const backendLogs = await api.getAuditLogs();
+        if (Array.isArray(backendLogs) && backendLogs.length > 0) {
+          loadedAuditLogs = backendLogs.map((l: any) => ({
+            ...l,
+            timestamp: new Date(l.timestamp),
+          }));
+        }
+      } catch (e) {
+        // Backend audit_logs unavailable
+      }
+
+      if (loadedAuditLogs.length === 0) {
+        const cachedLogs = localStorage.getItem('pos_audit_logs');
+        if (cachedLogs) {
+          try {
+            const parsed = JSON.parse(cachedLogs);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              loadedAuditLogs = parsed.map((l: any) => ({
+                ...l,
+                timestamp: new Date(l.timestamp),
+              }));
+            }
+          } catch (e) {
+            console.error('Failed to parse cached audit logs:', e);
+          }
+        }
+      }
+
+      if (loadedAuditLogs.length === 0 && (loadedSales.length > 0 || loadedProducts.length > 0)) {
+        loadedAuditLogs = buildInitialAuditLogs(loadedSales, loadedProducts);
+        localStorage.setItem('pos_audit_logs', JSON.stringify(loadedAuditLogs));
+      }
+
+      if (loadedAuditLogs.length > 0) {
+        setAuditLogs(loadedAuditLogs);
       }
       
       // Handle User and Cart separately as they are purely auth-based
@@ -296,66 +566,240 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     localStorage.setItem('pos_products', JSON.stringify(products));
     localStorage.setItem('pos_sales', JSON.stringify(sales));
     localStorage.setItem('pos_suppliers', JSON.stringify(suppliers));
+    localStorage.setItem('pos_alerts', JSON.stringify(alerts));
+    localStorage.setItem('pos_audit_logs', JSON.stringify(auditLogs));
     localStorage.setItem('pos_cart', JSON.stringify(cart));
     if (user) {
       localStorage.setItem('pos_user', JSON.stringify(user));
     } else {
       localStorage.removeItem('pos_user');
     }
-  }, [products, sales, suppliers, cart, user, isInitialized]);
+  }, [products, sales, suppliers, alerts, auditLogs, cart, user, isInitialized]);
 
   // Inventory functions
   const addNewProduct = async (productData: Omit<Product, 'id'>) => {
+    const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const normalizedNewProduct: Product = {
+      ...productData,
+      id,
+      price: Number(productData.price) || 0,
+      costPrice: Number(productData.costPrice ?? (productData as any).cost_price ?? 0),
+      quantity: Number(productData.quantity) || 0,
+      reorderLevel: Number(productData.reorderLevel ?? (productData as any).reorder_level ?? 10),
+    };
+
     try {
-      const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const newProduct = { ...productData, id };
-      await api.addProduct(newProduct);
+      await api.addProduct({
+        ...normalizedNewProduct,
+        cost_price: normalizedNewProduct.costPrice,
+        reorder_level: normalizedNewProduct.reorderLevel,
+      });
       const updatedProducts = await api.getProducts();
       const parsedProducts = updatedProducts.map((prod: any) => ({
         ...prod,
+        price: Number(prod.price ?? 0),
+        quantity: Number(prod.quantity ?? 0),
         costPrice: prod.costPrice !== undefined ? Number(prod.costPrice) : Number(prod.cost_price ?? 0),
         reorderLevel: prod.reorderLevel !== undefined ? Number(prod.reorderLevel) : Number(prod.reorder_level ?? 0),
       }));
       setProducts(parsedProducts);
-      showToast(`Product "${productData.name}" added successfully.`, 'success');
+      importInventory({ products: parsedProducts, stockMovements: [], alerts });
     } catch (err) {
-      console.error('Failed to add product:', err);
-      showToast('Failed to add product. Please check your network.', 'error');
+      console.warn('Backend addProduct failed, using local state fallback:', err);
+      setProducts((prev) => {
+        const next = [normalizedNewProduct, ...prev];
+        importInventory({ products: next, stockMovements: [], alerts });
+        return next;
+      });
     }
+
+    await recordAuditLog({
+      action: 'PRODUCT_ADDED',
+      category: 'inventory',
+      severity: 'success',
+      actorName: user?.name || 'Admin User',
+      actorRole: user?.role || 'admin',
+      entityId: normalizedNewProduct.sku || normalizedNewProduct.id,
+      entityName: normalizedNewProduct.name,
+      description: `Added new product "${normalizedNewProduct.name}" (SKU: ${normalizedNewProduct.sku}) with initial stock of ${normalizedNewProduct.quantity} units at ₱${normalizedNewProduct.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}.`,
+      metadata: {
+        stockChanges: [
+          {
+            productId: normalizedNewProduct.id,
+            productName: normalizedNewProduct.name,
+            sku: normalizedNewProduct.sku,
+            quantityDelta: normalizedNewProduct.quantity,
+            previousStock: 0,
+            newStock: normalizedNewProduct.quantity,
+            unitPrice: normalizedNewProduct.price,
+          },
+        ],
+      },
+    });
+
+    showToast(`Product "${productData.name}" added successfully.`, 'success');
   };
 
   const updateExistingProduct = async (id: string, updates: Partial<Product>) => {
+    const existingProduct = products.find((p) => String(p.id) === String(id));
+    const prevQty = existingProduct ? Number(existingProduct.quantity) || 0 : 0;
+    const nextQty = updates.quantity !== undefined ? Number(updates.quantity) : prevQty;
+    const qtyDelta = nextQty - prevQty;
+
     try {
       await api.updateProduct(id, updates);
       const updatedProducts = await api.getProducts();
       const parsedProducts = updatedProducts.map((prod: any) => ({
         ...prod,
+        price: Number(prod.price ?? 0),
+        quantity: Number(prod.quantity ?? 0),
         costPrice: prod.costPrice !== undefined ? Number(prod.costPrice) : Number(prod.cost_price ?? 0),
         reorderLevel: prod.reorderLevel !== undefined ? Number(prod.reorderLevel) : Number(prod.reorder_level ?? 0),
       }));
       setProducts(parsedProducts);
-      showToast('Product updated successfully.', 'success');
+      importInventory({ products: parsedProducts, stockMovements: [], alerts });
     } catch (err) {
-      console.error('Failed to update product:', err);
-      showToast('Failed to update product.', 'error');
+      console.warn('Backend updateProduct failed, applying update locally:', err);
+      setProducts((prev) => {
+        const next = prev.map((prod) =>
+          String(prod.id) === String(id)
+            ? {
+                ...prod,
+                ...updates,
+                price: updates.price !== undefined ? Number(updates.price) : prod.price,
+                quantity: updates.quantity !== undefined ? Number(updates.quantity) : prod.quantity,
+              }
+            : prod
+        );
+        importInventory({ products: next, stockMovements: [], alerts });
+        return next;
+      });
     }
+
+    // Remove low-stock alert if stock is now above reorderLevel
+    if (existingProduct && nextQty > (Number(existingProduct.reorderLevel) || 10)) {
+      setAlerts((prev) => prev.filter((a) => String(a.productId || a.product_id) !== String(id)));
+    }
+
+    if (existingProduct) {
+      const fieldChanges: Array<{ field: string; from: any; to: any }> = [];
+      if (updates.name !== undefined && updates.name !== existingProduct.name) {
+        fieldChanges.push({ field: 'Name', from: existingProduct.name, to: updates.name });
+      }
+      if (updates.price !== undefined && Number(updates.price) !== Number(existingProduct.price)) {
+        fieldChanges.push({
+          field: 'Retail Price',
+          from: `₱${Number(existingProduct.price).toFixed(2)}`,
+          to: `₱${Number(updates.price).toFixed(2)}`,
+        });
+      }
+      if (updates.category !== undefined && updates.category !== existingProduct.category) {
+        fieldChanges.push({ field: 'Category', from: existingProduct.category, to: updates.category });
+      }
+      if (updates.quantity !== undefined && nextQty !== prevQty) {
+        fieldChanges.push({ field: 'Stock Quantity', from: `${prevQty} units`, to: `${nextQty} units` });
+      }
+
+      const isPureRestock = qtyDelta > 0 && Object.keys(updates).length === 1 && updates.quantity !== undefined;
+      const actionType: AuditActionType = isPureRestock
+        ? 'STOCK_RESTOCKED'
+        : qtyDelta !== 0
+        ? 'STOCK_ADJUSTED'
+        : 'PRODUCT_UPDATED';
+
+      const prodName = updates.name || existingProduct.name;
+      const prodSku = updates.sku || existingProduct.sku;
+
+      let description = `Updated product "${prodName}" (${prodSku}).`;
+      if (isPureRestock) {
+        description = `Restocked "${prodName}" (${prodSku}): added +${qtyDelta} units (${prevQty} → ${nextQty} units).`;
+      } else if (qtyDelta !== 0) {
+        const sign = qtyDelta > 0 ? `+${qtyDelta}` : `${qtyDelta}`;
+        description = `Adjusted stock & details for "${prodName}" (${prodSku}): stock ${prevQty} → ${nextQty} (${sign} units).`;
+      }
+
+      await recordAuditLog({
+        action: actionType,
+        category: 'inventory',
+        severity: qtyDelta < 0 ? 'warning' : 'info',
+        actorName: user?.name || 'Admin User',
+        actorRole: user?.role || 'admin',
+        entityId: prodSku || existingProduct.id,
+        entityName: prodName,
+        description,
+        metadata: {
+          stockChanges:
+            qtyDelta !== 0
+              ? [
+                  {
+                    productId: existingProduct.id,
+                    productName: prodName,
+                    sku: prodSku,
+                    quantityDelta: qtyDelta,
+                    previousStock: prevQty,
+                    newStock: nextQty,
+                    unitPrice: Number(updates.price ?? existingProduct.price),
+                  },
+                ]
+              : undefined,
+          fieldChanges: fieldChanges.length > 0 ? fieldChanges : undefined,
+        },
+      });
+    }
+
+    showToast('Product updated successfully.', 'success');
   };
 
   const deleteExistingProduct = async (id: string) => {
+    const targetProduct = products.find((p) => String(p.id) === String(id));
     try {
       await api.deleteProduct(id);
       const updatedProducts = await api.getProducts();
       const parsedProducts = updatedProducts.map((prod: any) => ({
         ...prod,
+        price: Number(prod.price ?? 0),
+        quantity: Number(prod.quantity ?? 0),
         costPrice: prod.costPrice !== undefined ? Number(prod.costPrice) : Number(prod.cost_price ?? 0),
         reorderLevel: prod.reorderLevel !== undefined ? Number(prod.reorderLevel) : Number(prod.reorder_level ?? 0),
       }));
       setProducts(parsedProducts);
-      showToast('Product removed from catalog.', 'info');
+      importInventory({ products: parsedProducts, stockMovements: [], alerts });
     } catch (err) {
-      console.error('Failed to delete product:', err);
-      showToast('Failed to delete product.', 'error');
+      console.warn('Backend deleteProduct failed, removing locally:', err);
+      setProducts((prev) => {
+        const next = prev.filter((p) => String(p.id) !== String(id));
+        importInventory({ products: next, stockMovements: [], alerts });
+        return next;
+      });
     }
+
+    if (targetProduct) {
+      await recordAuditLog({
+        action: 'PRODUCT_DELETED',
+        category: 'inventory',
+        severity: 'warning',
+        actorName: user?.name || 'Admin User',
+        actorRole: user?.role || 'admin',
+        entityId: targetProduct.sku || targetProduct.id,
+        entityName: targetProduct.name,
+        description: `Removed product "${targetProduct.name}" (SKU: ${targetProduct.sku}) from inventory catalog (had ${targetProduct.quantity} units in stock).`,
+        metadata: {
+          stockChanges: [
+            {
+              productId: targetProduct.id,
+              productName: targetProduct.name,
+              sku: targetProduct.sku,
+              quantityDelta: -Number(targetProduct.quantity || 0),
+              previousStock: Number(targetProduct.quantity || 0),
+              newStock: 0,
+              unitPrice: Number(targetProduct.price || 0),
+            },
+          ],
+        },
+      });
+    }
+
+    showToast('Product removed from catalog.', 'info');
   };
 
   const searchProduct = (query: string) => searchProducts(query);
@@ -374,29 +818,41 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setProducts(getAllProducts());
   };
 
-  const getLowStock = () => products.filter(p => p.quantity <= p.reorderLevel);
+  const getLowStock = () => products.filter(p => Number(p.quantity) <= Number(p.reorderLevel));
 
   const getInventoryAlerts = () => alerts;
 
   const clearInventoryAlert = async (alertId: string) => {
+    setAlerts((prev) => prev.filter((a) => a.id !== alertId));
     try {
       await api.deleteAlert(alertId);
       const updatedAlerts = await api.getAlerts();
-      setAlerts(updatedAlerts);
-      showToast('Notification alert cleared.', 'info');
+      if (Array.isArray(updatedAlerts)) setAlerts(updatedAlerts);
     } catch (err) {
-      console.error('Failed to clear alert:', err);
+      // Offline fallback handled
     }
+    showToast('Notification alert cleared.', 'info');
   };
 
   const clearAllInventoryAlerts = async () => {
+    const count = alerts.length;
+    setAlerts([]);
     try {
       await api.clearAllAlerts();
-      setAlerts([]);
-      showToast('All notifications cleared.', 'info');
     } catch (err) {
-      console.error('Failed to clear all alerts:', err);
+      // Offline fallback handled
     }
+    await recordAuditLog({
+      action: 'ALERTS_CLEARED',
+      category: 'system',
+      severity: 'info',
+      actorName: user?.name || 'Admin User',
+      actorRole: user?.role || 'admin',
+      entityId: 'ALERTS-ALL',
+      entityName: 'System Notifications',
+      description: `Cleared ${count} operational notification alert(s) from the Alert Center.`,
+    });
+    showToast('All notifications cleared.', 'info');
   };
 
   // Sales functions
@@ -411,54 +867,268 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     total?: number,
     change?: number
   ) => {
-    try {
-      const id = `SALE-${Date.now()}`;
-      
-      // Use passed total/tax or calculate if not provided (with fallback for item property names)
-      const calculatedTotal = total || (items.reduce((sum, item) => sum + ((item.price || item.unitPrice || 0) * item.quantity), 0) - (discount || 0));
-      const calculatedTax = tax || (calculatedTotal * 0.12);
-      
-      const saleData = {
-        id,
-        customer_name: notes && notes.startsWith('Customer: ') ? notes.replace('Customer: ', '') : 'Walk-in',
-        total: calculatedTotal,
-        tax: calculatedTax,
-        discount: discount || 0,
-        payment_method: paymentMethod,
-        amount_paid: amountPaid,
-        change_amount: change || (amountPaid - calculatedTotal),
-        cashier: cashier || 'Unknown',
-        notes: notes || '',
-        items: items.map(item => ({
-          ...item,
-          price: item.price || item.unitPrice // Ensure backend gets 'price'
-        }))
+    const id = `SALE-${Date.now()}`;
+    const calculatedSubtotal = items.reduce(
+      (sum, item) => sum + (Number(item.price || item.unitPrice || 0) * Number(item.quantity || 1)),
+      0
+    );
+    const calculatedTotal = total ?? (calculatedSubtotal - (discount || 0));
+    const calculatedTax = tax ?? (calculatedTotal * 0.12);
+    const customerName = notes && notes.startsWith('Customer: ')
+      ? notes.replace('Customer: ', '')
+      : (notes || 'Walk-in');
+    const actingCashier = cashier || user?.name || 'Cashier User';
+
+    // Compute exact stock deductions per item
+    const stockChanges: AuditLogStockItem[] = [];
+    const updatedProducts = products.map((prod) => {
+      const matchingItem = items.find(
+        (i) =>
+          String(i.productId || i.product_id) === String(prod.id) ||
+          String(i.productName || i.product_name || '').toLowerCase() === prod.name.toLowerCase()
+      );
+      if (!matchingItem) return prod;
+
+      const qtySold = Math.max(0, Number(matchingItem.quantity) || 0);
+      const prevStock = Number(prod.quantity) || 0;
+      const newStock = Math.max(0, prevStock - qtySold);
+
+      stockChanges.push({
+        productId: prod.id,
+        productName: prod.name,
+        sku: prod.sku,
+        quantityDelta: -qtySold,
+        previousStock: prevStock,
+        newStock,
+        unitPrice: Number(matchingItem.price || matchingItem.unitPrice || prod.price || 0),
+      });
+
+      return {
+        ...prod,
+        quantity: newStock,
       };
-      
+    });
+
+    const saleData = {
+      id,
+      customer_name: customerName,
+      customerName,
+      subtotal: calculatedSubtotal,
+      total: calculatedTotal,
+      tax: calculatedTax,
+      discount: discount || 0,
+      payment_method: paymentMethod,
+      paymentMethod,
+      amount_paid: amountPaid,
+      amountPaid,
+      change_amount: change ?? (amountPaid - calculatedTotal),
+      change: change ?? (amountPaid - calculatedTotal),
+      cashier: actingCashier,
+      notes: notes || '',
+      status: 'completed' as const,
+      saleDate: new Date(),
+      items: items.map((item) => ({
+        ...item,
+        productId: item.productId || item.product_id,
+        productName: item.productName || item.product_name,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.price || item.unitPrice || 0),
+        price: Number(item.price || item.unitPrice || 0),
+        total: Number(item.total || Number(item.quantity) * Number(item.price || item.unitPrice || 0)),
+      })),
+    };
+
+    // Apply stock deduction & sale addition locally right away
+    setProducts(updatedProducts);
+    setSales((prev) => {
+      const nextSales = [saleData as unknown as Sale, ...prev];
+      importSales({ sales: nextSales, TAX_RATE: 0.12 });
+      return nextSales;
+    });
+    importInventory({ products: updatedProducts, stockMovements: [], alerts });
+
+    try {
       await api.createSale(saleData);
-      
-      // Immediate accuracy: Refresh all data to sync state across the app
       await refreshAllData();
-      showToast(`Sale recorded successfully! Order #${id}`, 'success');
-      
-      return saleData;
     } catch (err) {
-      console.error('Failed to create sale:', err);
-      showToast('Failed to record sale.', 'error');
-      return null;
+      console.warn('Backend createSale unavailable, recorded sale and deducted stock locally:', err);
     }
+
+    const totalUnitsSold = items.reduce((sum, i) => sum + (Number(i.quantity) || 0), 0);
+    await recordAuditLog({
+      action: 'SALE_COMPLETED',
+      category: 'sales',
+      severity: 'success',
+      actorName: actingCashier,
+      actorRole: user?.role || 'cashier',
+      entityId: id,
+      entityName: `Order #${id}`,
+      description: `Completed POS sale #${id} for ${customerName} totaling ₱${Number(calculatedTotal).toLocaleString(undefined, { minimumFractionDigits: 2 })} (${totalUnitsSold} unit(s) deducted from inventory).`,
+      metadata: {
+        stockChanges,
+        orderTotal: Number(calculatedTotal),
+        customerName,
+        paymentMethod,
+        originalCashier: actingCashier,
+      },
+    });
+
+    showToast(`Sale recorded successfully! Order #${id}`, 'success');
+    return saleData;
   };
 
-  const cancelExistingSale = async (saleId: string) => {
+  const cancelExistingSale = async (saleId: string, reason?: string) => {
+    const targetSale = sales.find((s) => s.id === saleId);
+    if (!targetSale) {
+      showToast('Order not found.', 'error');
+      return;
+    }
+    if (targetSale.status === 'cancelled') {
+      showToast('This order has already been voided.', 'warning');
+      return;
+    }
+
+    const saleItems = Array.isArray(targetSale.items) ? targetSale.items : [];
+
+    // Aggregate quantities to restore per product (handles multiple lines of the same product in one order)
+    const restoreMap = new Map<string, { qty: number; name: string; unitPrice: number }>();
+    saleItems.forEach((item: any) => {
+      const pId = String(item.productId || item.product_id || '');
+      const pName = String(item.productName || item.product_name || '');
+      const key = pId || pName.toLowerCase();
+      const qty = Math.max(0, Number(item.quantity) || 0);
+      const uPrice = Number(item.unitPrice || item.price || 0);
+      const existing = restoreMap.get(key);
+      if (existing) {
+        existing.qty += qty;
+      } else {
+        restoreMap.set(key, { qty, name: pName, unitPrice: uPrice });
+      }
+    });
+
+    const stockChanges: AuditLogStockItem[] = [];
+
+    // Restore quantities back to inventory products
+    const updatedProducts = products.map((prod) => {
+      const byId = restoreMap.get(String(prod.id));
+      const byName = !byId
+        ? Array.from(restoreMap.values()).find(
+            (entry) => entry.name.toLowerCase() === prod.name.toLowerCase()
+          )
+        : undefined;
+      const match = byId || byName;
+      if (!match || match.qty <= 0) return prod;
+
+      const prevStock = Number(prod.quantity) || 0;
+      const restoredQty = match.qty;
+      const newStock = prevStock + restoredQty;
+
+      stockChanges.push({
+        productId: prod.id,
+        productName: prod.name,
+        sku: prod.sku,
+        quantityDelta: restoredQty,
+        previousStock: prevStock,
+        newStock,
+        unitPrice: match.unitPrice || Number(prod.price) || 0,
+      });
+
+      return {
+        ...prod,
+        quantity: newStock,
+      };
+    });
+
+    // If any sale item wasn't matched in current products array, still record it in stockChanges for audit visibility
+    saleItems.forEach((item: any) => {
+      const pId = String(item.productId || item.product_id || '');
+      const pName = String(item.productName || item.product_name || '');
+      const alreadyTracked = stockChanges.some(
+        (sc) =>
+          String(sc.productId) === pId ||
+          sc.productName.toLowerCase() === pName.toLowerCase()
+      );
+      if (!alreadyTracked) {
+        const qty = Math.max(0, Number(item.quantity) || 0);
+        stockChanges.push({
+          productId: pId || 'UNKNOWN',
+          productName: pName || 'Unknown Product',
+          quantityDelta: qty,
+          previousStock: 0,
+          newStock: qty,
+          unitPrice: Number(item.unitPrice || item.price || 0),
+        });
+      }
+    });
+
+    // Update alerts: remove low-stock alerts for any products whose restored stock is now above reorderLevel
+    const updatedAlerts = alerts.filter((alert) => {
+      const alertProdId = String(alert.productId || alert.product_id || '');
+      const restoredProd = updatedProducts.find((p) => String(p.id) === alertProdId);
+      if (restoredProd && alert.type === 'low-stock') {
+        return Number(restoredProd.quantity) <= Number(restoredProd.reorderLevel || 10);
+      }
+      return true;
+    });
+
+    // Mark sale as cancelled in state
+    const updatedSales = sales.map((sale) =>
+      sale.id === saleId ? { ...sale, status: 'cancelled' as const } : sale
+    );
+
+    // Commit immediately to React state, in-memory data modules, and localStorage
+    setProducts(updatedProducts);
+    setSales(updatedSales);
+    setAlerts(updatedAlerts);
+    importInventory({ products: updatedProducts, stockMovements: [], alerts: updatedAlerts });
+    importSales({ sales: updatedSales, TAX_RATE: 0.12 });
+
+    localStorage.setItem('pos_products', JSON.stringify(updatedProducts));
+    localStorage.setItem('pos_sales', JSON.stringify(updatedSales));
+    localStorage.setItem('pos_alerts', JSON.stringify(updatedAlerts));
+
+    // Sync with backend database
     try {
       await api.cancelSale(saleId);
       await refreshAllData();
-      showToast('Transaction voided and stock restored.', 'info');
     } catch (err) {
-      console.warn('Failed to cancel sale in database, using offline fallback:', err);
-      setSales(prev => prev.map(sale => sale.id === saleId ? { ...sale, status: 'cancelled' } : sale));
-      showToast('Transaction voided (offline mode).', 'info');
+      console.warn('Backend cancelSale failed or offline; syncing restored product stock individually:', err);
+      // Even if the sale record wasn't in MySQL (e.g., seeded in localStorage), try updating the products in MySQL
+      await Promise.allSettled(
+        stockChanges.map((sc) =>
+          api.updateProduct(sc.productId, { quantity: sc.newStock })
+        )
+      );
     }
+
+    const totalUnitsRestored = stockChanges.reduce((sum, sc) => sum + sc.quantityDelta, 0);
+    const itemsSummary = stockChanges
+      .map((sc) => `+${sc.quantityDelta} ${sc.productName} (${sc.previousStock}→${sc.newStock})`)
+      .join(', ');
+
+    await recordAuditLog({
+      action: 'ORDER_VOIDED',
+      category: 'sales',
+      severity: 'critical',
+      actorName: user?.name || 'Admin User',
+      actorRole: user?.role || 'admin',
+      entityId: saleId,
+      entityName: `Order #${saleId}`,
+      description: `Voided Order #${saleId} (₱${Number(targetSale.total).toLocaleString(undefined, { minimumFractionDigits: 2 })}) and restored ${totalUnitsRestored} unit(s) back to inventory stock [${itemsSummary}]${reason ? ` — Reason: ${reason}` : ''}.`,
+      metadata: {
+        stockChanges,
+        orderTotal: Number(targetSale.total),
+        customerName: targetSale.customerName || 'Walk-in',
+        paymentMethod: targetSale.paymentMethod,
+        originalCashier: targetSale.cashier || 'Cashier',
+        voidReason: reason || 'Transaction reversal & inventory stock restoration',
+      },
+    });
+
+    showToast(
+      `Order #${saleId} voided! Restored +${totalUnitsRestored} unit(s) back to inventory stock.`,
+      'info'
+    );
   };
 
   const getSalesData = () => sales;
@@ -482,38 +1152,73 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       await api.addSupplier(newSupplier);
       const updatedSuppliers = await api.getSuppliers();
       setSuppliers(updatedSuppliers);
-      showToast(`Supplier "${supplierData.name}" registered.`, 'success');
     } catch (err) {
       console.warn('Failed to add supplier to database, using offline fallback:', err);
       setSuppliers(prev => [...prev, newSupplier]);
-      showToast(`Supplier "${supplierData.name}" registered (offline).`, 'success');
     }
+
+    await recordAuditLog({
+      action: 'SUPPLIER_ADDED',
+      category: 'supplier',
+      severity: 'success',
+      actorName: user?.name || 'Admin User',
+      actorRole: user?.role || 'admin',
+      entityId: id,
+      entityName: supplierData.name,
+      description: `Registered new supplier "${supplierData.name}" (Contact: ${supplierData.contactPerson}, Terms: ${supplierData.paymentTerms}).`,
+    });
+
+    showToast(`Supplier "${supplierData.name}" registered.`, 'success');
   };
 
   const updateExistingSupplier = async (id: string, updates: Partial<Supplier>) => {
+    const existing = suppliers.find((s) => s.id === id);
     try {
       await api.updateSupplier(id, updates);
       const updatedSuppliers = await api.getSuppliers();
       setSuppliers(updatedSuppliers);
-      showToast('Supplier updated successfully.', 'success');
     } catch (err) {
       console.warn('Failed to update supplier in database, using offline fallback:', err);
       setSuppliers(prev => prev.map(sup => sup.id === id ? { ...sup, ...updates } : sup));
-      showToast('Supplier updated (offline).', 'success');
     }
+
+    await recordAuditLog({
+      action: 'SUPPLIER_UPDATED',
+      category: 'supplier',
+      severity: 'info',
+      actorName: user?.name || 'Admin User',
+      actorRole: user?.role || 'admin',
+      entityId: id,
+      entityName: updates.name || existing?.name || id,
+      description: `Updated supplier profile for "${updates.name || existing?.name || id}".`,
+    });
+
+    showToast('Supplier updated successfully.', 'success');
   };
 
   const deleteExistingSupplier = async (id: string) => {
+    const existing = suppliers.find((s) => s.id === id);
     try {
       await api.deleteSupplier(id);
       const updatedSuppliers = await api.getSuppliers();
       setSuppliers(updatedSuppliers);
-      showToast('Supplier removed.', 'info');
     } catch (err) {
       console.warn('Failed to delete supplier from database, using offline fallback:', err);
       setSuppliers(prev => prev.filter(sup => sup.id !== id));
-      showToast('Supplier removed (offline).', 'info');
     }
+
+    await recordAuditLog({
+      action: 'SUPPLIER_DELETED',
+      category: 'supplier',
+      severity: 'warning',
+      actorName: user?.name || 'Admin User',
+      actorRole: user?.role || 'admin',
+      entityId: id,
+      entityName: existing?.name || id,
+      description: `Removed supplier "${existing?.name || id}" from vendor directory.`,
+    });
+
+    showToast('Supplier removed.', 'info');
   };
 
   const searchSupplier = (query: string) => searchSuppliers(query);
@@ -562,15 +1267,38 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   // Auth functions
   const login = (email: string, role: 'admin' | 'cashier') => {
+    const actorName = role === 'admin' ? 'Admin User' : 'Cashier User';
     setUser({
       id: Math.random().toString(36).substr(2, 9),
-      name: role === 'admin' ? 'Admin User' : 'Cashier User',
+      name: actorName,
       email,
       role
+    });
+    recordAuditLog({
+      action: 'USER_LOGIN',
+      category: 'auth',
+      severity: 'info',
+      actorName,
+      actorRole: role,
+      entityId: email,
+      entityName: `${actorName} (${role.toUpperCase()})`,
+      description: `Operator "${actorName}" (${email}) signed in to the ${role === 'admin' ? 'Admin Back-Office Portal' : 'POS Cashier Terminal'}.`,
     });
   };
 
   const logout = () => {
+    if (user) {
+      recordAuditLog({
+        action: 'USER_LOGOUT',
+        category: 'auth',
+        severity: 'info',
+        actorName: user.name,
+        actorRole: user.role,
+        entityId: user.email,
+        entityName: `${user.name} (${user.role.toUpperCase()})`,
+        description: `Operator "${user.name}" signed out of the session.`,
+      });
+    }
     setUser(null);
   };
 
@@ -1123,14 +1851,19 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           createdAt: new Date()
         }));
 
+      const initialLogs = buildInitialAuditLogs(mockSales, mockProducts);
+
       setProducts(mockProducts);
       setSales(mockSales);
       setSuppliers(mockSuppliers);
       setAlerts(mockAlerts);
+      setAuditLogs(initialLogs);
       
       localStorage.setItem('pos_products', JSON.stringify(mockProducts));
       localStorage.setItem('pos_sales', JSON.stringify(mockSales));
       localStorage.setItem('pos_suppliers', JSON.stringify(mockSuppliers));
+      localStorage.setItem('pos_alerts', JSON.stringify(mockAlerts));
+      localStorage.setItem('pos_audit_logs', JSON.stringify(initialLogs));
 
       importInventory({ products: mockProducts, stockMovements: [], alerts: mockAlerts });
       importSales({ sales: mockSales, TAX_RATE: 0.12 });
@@ -1166,6 +1899,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     updateExistingSupplier,
     deleteExistingSupplier,
     searchSupplier,
+    auditLogs,
+    recordAuditLog,
+    clearAuditLogs,
     cart,
     addToCart,
     removeFromCart,

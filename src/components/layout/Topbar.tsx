@@ -231,11 +231,6 @@ export default function Topbar() {
       </div>
 
       <div className="flex items-center gap-4">
-        {/* System Status Indicator - Heuristic 1 */}
-        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-[10px] font-black text-emerald-700 tracking-wider uppercase" title="System database is online and real-time syncing">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Database Synced</span>
-        </div>
 
         {/* Help & Documentation Button - Heuristic 10 */}
         <button
@@ -251,24 +246,14 @@ export default function Topbar() {
         {/* Notifications Icon with count - Heuristic 1 & 6 */}
         <button 
           onClick={() => navigate('/notifications')}
-<<<<<<< HEAD
           className="relative p-2.5 text-slate-500 hover:text-[#c2410c] hover:bg-orange-50/60 rounded-xl transition-all cursor-pointer group"
-          title="System Notifications"
-        >
-          <Bell size={20} className="group-hover:scale-105 transition-transform" />
-          {totalNotifications > 0 && (
-            <span className="absolute 1 top-1 right-1 px-1.5 min-w-[18px] h-[18px] bg-[#c2410c] text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-xs">
-              {totalNotifications > 99 ? '99+' : totalNotifications}
-=======
-          className="relative p-2 text-slate-400 hover:text-[#92400e] hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
           title={`${totalNotifications} active notifications`}
           aria-label="View notifications"
         >
-          <Bell size={20} />
+          <Bell size={20} className="group-hover:scale-105 transition-transform" />
           {totalNotifications > 0 && (
-            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-              {totalNotifications}
->>>>>>> 6bb8b4ca909d000fe6bb6a013af9a6f12a6b990a
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1.5 bg-[#c2410c] text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-xs">
+              {totalNotifications > 99 ? '99+' : totalNotifications}
             </span>
           )}
         </button>

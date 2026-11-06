@@ -42,6 +42,21 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 
+    // Create audit_logs table
+    $pdo->exec("CREATE TABLE IF NOT EXISTS audit_logs (
+        id VARCHAR(64) PRIMARY KEY,
+        action VARCHAR(100) NOT NULL,
+        category VARCHAR(50) NOT NULL DEFAULT 'system',
+        severity VARCHAR(30) NOT NULL DEFAULT 'info',
+        actor_name VARCHAR(150) NOT NULL DEFAULT 'System',
+        actor_role VARCHAR(50) NOT NULL DEFAULT 'admin',
+        entity_id VARCHAR(100) DEFAULT NULL,
+        entity_name VARCHAR(255) DEFAULT NULL,
+        description TEXT NOT NULL,
+        metadata LONGTEXT DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+
     echo json_encode(['success' => true, 'message' => 'Tables created/verified successfully!']);
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);

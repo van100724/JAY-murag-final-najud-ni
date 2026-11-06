@@ -42,18 +42,9 @@ export default function LoginForm() {
       login(trimmedUser, 'cashier');
       navigate('/pos');
     } else {
-      setError('Incorrect username or password. Please verify your credentials or click a demo account below to fill automatically.');
+      setError('Incorrect username or password. Please check your credentials and try again.');
     }
     setIsLoading(false);
-  };
-
-  const setDemoCredentials = (role: 'admin' | 'cashier') => {
-    if (role === 'admin') {
-      setForm({ username: 'admin', password: 'admin123' });
-    } else {
-      setForm({ username: 'cashier', password: 'cashier123' });
-    }
-    setError('');
   };
 
   return (
@@ -78,7 +69,7 @@ export default function LoginForm() {
             name="username"
             value={form.username}
             onChange={handleChange}
-            placeholder="e.g. admin or cashier"
+            placeholder="Enter username or email"
             className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-12 py-3.5 outline-none focus:border-[#c2410c]/30 focus:ring-4 focus:ring-orange-500/5 transition-all text-slate-700 placeholder:text-slate-300 font-medium text-sm"
             required
           />
@@ -130,72 +121,6 @@ export default function LoginForm() {
           )}
         </span>
       </button>
-
-<<<<<<< HEAD
-      {/* Sample Demo Credentials for Cashier & Admin */}
-      <div className="pt-5 border-t border-slate-100 space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-            Sample Accounts
-          </span>
-          <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200/50">
-            Click to Auto-Fill
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              setForm({ username: 'admin', password: 'admin123' });
-              if (error) setError('');
-            }}
-            className="p-3.5 bg-slate-50 hover:bg-orange-50/70 border border-slate-200 hover:border-orange-300 rounded-2xl text-left transition-all group cursor-pointer shadow-sm hover:shadow"
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-black text-slate-800 group-hover:text-[#c2410c] transition-colors">Admin</span>
-              <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-orange-100 text-[#c2410c]">All Access</span>
-            </div>
-            <p className="text-[10px] text-slate-400 font-mono">admin / admin123</p>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setForm({ username: 'cashier', password: 'cashier123' });
-              if (error) setError('');
-            }}
-            className="p-3.5 bg-slate-50 hover:bg-blue-50/70 border border-slate-200 hover:border-blue-300 rounded-2xl text-left transition-all group cursor-pointer shadow-sm hover:shadow"
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-black text-slate-800 group-hover:text-blue-600 transition-colors">Cashier</span>
-              <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">POS Only</span>
-            </div>
-            <p className="text-[10px] text-slate-400 font-mono">cashier / cashier123</p>
-=======
-      {/* Quick Demo Fill - Heuristic 6 & 10 */}
-      <div className="pt-2 border-t border-slate-100">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-2.5">
-          Quick Demo Accounts
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setDemoCredentials('admin')}
-            className="px-3 py-2 rounded-xl bg-slate-50 hover:bg-orange-50 hover:border-orange-200 border border-slate-200 text-slate-700 hover:text-[#c2410c] transition-all text-xs font-bold text-center"
-          >
-            Admin <span className="text-[10px] text-slate-400 block font-normal">admin / admin123</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setDemoCredentials('cashier')}
-            className="px-3 py-2 rounded-xl bg-slate-50 hover:bg-orange-50 hover:border-orange-200 border border-slate-200 text-slate-700 hover:text-[#c2410c] transition-all text-xs font-bold text-center"
-          >
-            Cashier <span className="text-[10px] text-slate-400 block font-normal">cashier / cashier123</span>
->>>>>>> 6bb8b4ca909d000fe6bb6a013af9a6f12a6b990a
-          </button>
-        </div>
-      </div>
     </form>
   );
 }

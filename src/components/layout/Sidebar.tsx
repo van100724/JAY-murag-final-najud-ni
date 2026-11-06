@@ -8,13 +8,9 @@ import {
   Truck,
   Bell,
   LogOut,
-<<<<<<< HEAD
-  CalendarClock
-=======
-  RefreshCcw,
   CalendarClock,
-  UserCheck
->>>>>>> 6bb8b4ca909d000fe6bb6a013af9a6f12a6b990a
+  UserCheck,
+  ClipboardList,
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useNavigate } from 'react-router-dom';
@@ -29,28 +25,18 @@ const allLinks = [
   { label: 'Reports', path: '/reports', icon: BarChart3, roles: ['admin'] },
   { label: 'Suppliers', path: '/suppliers', icon: Truck, roles: ['admin'] },
   { label: 'Notifications', path: '/notifications', icon: Bell, roles: ['admin'] },
+  { label: 'Audit Logs', path: '/audit-logs', icon: ClipboardList, roles: ['admin'] },
 ];
 
 export default function Sidebar() {
-<<<<<<< HEAD
   const { user, logout, getLowStock, getInventoryAlerts } = useApp();
-=======
-  const { user, logout, showToast } = useApp();
->>>>>>> 6bb8b4ca909d000fe6bb6a013af9a6f12a6b990a
   const navigate = useNavigate();
-  const [showSyncConfirm, setShowSyncConfirm] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const notificationCount = getLowStock().length + getInventoryAlerts().length;
 
   // Filter links based on user role
   const links = allLinks.filter(link => link.roles.includes(user?.role || ''));
-
-  const handleSyncConfirm = () => {
-    localStorage.clear();
-    showToast('Terminal cache cleared. Redirecting to login...', 'info');
-    window.location.href = '/login';
-  };
 
   const handleLogoutConfirm = () => {
     logout();
@@ -107,9 +93,6 @@ export default function Sidebar() {
       </nav>
 
       {/* Sidebar Footer */}
-<<<<<<< HEAD
-      <div className="p-6 border-t border-white/5 bg-[#1a1a2e]/30 space-y-4">
-=======
       <div className="p-4 border-t border-white/5 bg-[#1a1a2e]/30 space-y-2">
         {/* User Card */}
         {user && (
@@ -126,36 +109,13 @@ export default function Sidebar() {
 
         <button
           type="button"
-          onClick={() => setShowSyncConfirm(true)}
-          className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all text-xs font-semibold group"
-          title="Reset local cache to fresh demo/database state"
-        >
-          <RefreshCcw size={16} className="group-hover:rotate-180 transition-transform duration-500" />
-          <span>Reset Terminal Cache</span>
-        </button>
-
->>>>>>> 6bb8b4ca909d000fe6bb6a013af9a6f12a6b990a
-        <button
-          type="button"
           onClick={() => setShowLogoutConfirm(true)}
-          className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all text-xs font-semibold group"
+          className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all text-xs font-semibold group cursor-pointer"
         >
           <LogOut size={16} className="group-hover:-translate-x-1 transition-transform" />
           <span>Logout</span>
         </button>
       </div>
-
-      {/* Confirmation Dialogs - Heuristics 3 & 5 */}
-      <ConfirmDialog
-        open={showSyncConfirm}
-        title="Reset Local Terminal Cache?"
-        message="This will clear your local offline browser storage and reload default system state. Are you sure you want to continue?"
-        confirmText="Reset Cache"
-        cancelText="Cancel"
-        isDestructive={true}
-        onConfirm={handleSyncConfirm}
-        onCancel={() => setShowSyncConfirm(false)}
-      />
 
       <ConfirmDialog
         open={showLogoutConfirm}
